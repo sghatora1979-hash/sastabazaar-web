@@ -1,6 +1,7 @@
 'use client';
 import { motion, useMotionValue, useSpring, useTransform, animate } from 'framer-motion';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { Volume2, VolumeX } from 'lucide-react';
 
 const SEGMENTS = [
   { label: '10% OFF', color: '#0B3D91' },
@@ -16,9 +17,70 @@ const SEGMENTS = [
 export function SpinWheel3D({ onResult }: { onResult?: (label: string) => void }) {
   const [spinning, setSpinning] = useState(false);
   const [result, setResult] = useState<string | null>(null);
+  const [muted, setMuted] = useState(false);
   const rotation = useMotionValue(0);
   const springRot = useSpring(rotation, { stiffness: 40, damping: 12 });
   const tiltX = useTransform(springRot, [0, 360], [0, 0]);
+  const audioRef = useRef<AudioContext | null>(null);
+  const lastSegRef = useRef(0);
+  const mutedRef = useRef(false);
+
+  const ensureAudio = (): AudioContext | null => {
+    try {
+      const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (!audioRef.current) audioRef.current = new Ctx();
+      if (audioRef.current.state === 'suspended') void audioRef.current.resume();
+      return audioRef.current;
+    } catch {
+      return null;
+    }
+  };
+
+  /** Short "tuck" click, like a real prize wheel peg. */
+  const tick = () => {
+    if (mutedRef.current) return;
+    const ctx = ensureAudio();
+    if (!ctx) return;
+    const t = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(1600, t);
+    osc.frequency.exponentialRampToValueAtTime(700, t + 0.035);
+    gain.gain.setValueAtTime(0.1, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.06);
+  };
+
+  /** Little win jingle when the wheel stops. */
+  const winJingle = () => {
+    if (mutedRef.current) return;
+    const ctx = ensureAudio();
+    if (!ctx) return;
+    [523, 659, 784, 1047].forEach((f, i) => {
+      const t = ctx.currentTime + i * 0.12;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(f, t);
+      gain.gain.setValueAtTime(0.12, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.3);
+    });
+  };
+
+  const toggleMute = () => {
+    setMuted(m => {
+      mutedRef.current = !m;
+      return !m;
+    });
+  };
 
   const spin = () => {
     if (spinning) return;
@@ -28,12 +90,23 @@ export function SpinWheel3D({ onResult }: { onResult?: (label: string) => void }
     // land the pointer (top) on the winning segment
     const segAngle = 360 / SEGMENTS.length;
     const targetAngle = 360 * 6 - (winner * segAngle + segAngle / 2);
+    lastSegRef.current = Math.floor(rotation.get() / segAngle);
     const controls = animate(rotation, rotation.get() + targetAngle, {
       duration: 4,
       ease: [0.15, 0.85, 0.25, 1],
+      onUpdate: (v) => {
+        // "tuck tuck" — click every time the pointer passes a segment peg.
+        // Ticks naturally slow down as the wheel decelerates. 
+        const seg = Math.floor(v / segAngle);
+        if (seg !== lastSegRef.current) {
+          lastSegRef.current = seg;
+          tick();
+        }
+      },
       onComplete: () => {
         setSpinning(false);
         setResult(SEGMENTS[winner].label);
+        winJingle();
         onResult?.(SEGMENTS[winner].label);
       }
     });
@@ -88,6 +161,15 @@ export function SpinWheel3D({ onResult }: { onResult?: (label: string) => void }
       >
         {spinning ? 'Spinning…' : 'SPIN NOW'}
       </motion.button>
+
+      <button
+        onClick={toggleMute}
+        className="inline-flex items-center gap-1.5 text-xs font-bold text-gray-400 hover:text-gray-600 -mt-3"
+        aria-label={muted ? 'Unmute wheel sounds' : 'Mute wheel sounds'}
+      >
+        {muted ? <VolumeX size={15} /> : <Volume2 size={15} />}
+        {muted ? 'Sound off' : 'Sound on'}
+      </button>
 
       {result && (
         <motion.div

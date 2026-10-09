@@ -26,6 +26,7 @@ export function Footer() {
             <li><Link href="/clearance" className="hover:text-white">Clearance Bazaar</Link></li>
             <li><Link href="/local" className="hover:text-white">Local Bazaar</Link></li>
             <li><Link href="/spin-and-win" className="hover:text-white">Spin &amp; Win</Link></li>
+            <li><Link href="/festivals" className="hover:text-white font-semibold text-white">🪔 Festival Sales</Link></li>
           </ul>
         </div>
 
@@ -41,7 +42,10 @@ export function Footer() {
         <div>
           <h4 className="text-white font-bold mb-3 text-sm uppercase tracking-wide">Help</h4>
           <ul className="space-y-2 text-sm">
-            <li><a href="https://wa.me/919000000000" className="hover:text-white">WhatsApp Support</a></li>
+            <li><Link href="/contact" className="hover:text-white font-semibold text-white">Contact Us</Link></li>
+            <li><Link href="/seller/agreement" className="hover:text-white">Seller Agreement</Link></li>
+            <li><a href="https://wa.me/919000000000" className="hover:text-white">WhatsApp Support <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded-full font-bold">soon</span></a></li>
+            <li><Link href="/track" className="hover:text-white">Track Order</Link></li>
             <li><Link href="/return-policy" className="hover:text-white">Returns</Link></li>
             <li><Link href="/shipping" className="hover:text-white">Shipping</Link></li>
             <li><Link href="/terms" className="hover:text-white">Terms</Link></li>
@@ -52,7 +56,7 @@ export function Footer() {
 
       <div className="border-t border-gray-800">
         <div className="max-w-7xl mx-auto px-4 py-4 text-xs text-gray-500 flex flex-col sm:flex-row justify-between gap-2">
-          <span>© {new Date().getFullYear()} Sastabazaar. All rights reserved.</span>
+          <span>© {new Date().getFullYear()} Sastabazaar · Head Office: Bangalore, India</span>
           <span>UPI · COD · Card · Escrow Protected</span>
         </div>
       </div>

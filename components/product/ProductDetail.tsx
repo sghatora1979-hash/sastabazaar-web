@@ -9,6 +9,7 @@ import { LikeDislike } from '@/components/ui/LikeDislike';
 import { formatINR } from '@/lib/utils';
 import { trackView } from '@/lib/interactions';
 import { addToCart } from '@/lib/cart';
+import { ShareButtons } from '@/components/ui/ShareButtons';
 import { Star, MapPin, ShieldCheck, Truck, RotateCcw, Store, Check } from 'lucide-react';
 
 export function ProductDetail({ product, categorySlug }: { product: Product; categorySlug?: string }) {
@@ -141,6 +142,8 @@ export function ProductDetail({ product, categorySlug }: { product: Product; cat
         <div className="max-w-xs mt-4">
           <LikeDislike productId={product.id} />
         </div>
+
+        <ShareButtons title={product.title} />
 
         <div className="grid grid-cols-2 gap-3 mt-6 text-sm">
           <div className="flex items-center gap-2 bg-gray-50 rounded-xl p-3">

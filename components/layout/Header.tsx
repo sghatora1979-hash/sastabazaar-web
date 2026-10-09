@@ -129,6 +129,10 @@ export function Header() {
             <Link href="/purana" className="px-3 py-2 text-sm font-medium hover:text-[var(--primary)] whitespace-nowrap">पुराना बाज़ार</Link>
             <Link href="/clearance" className="px-3 py-2 text-sm font-medium hover:text-[var(--primary)] whitespace-nowrap">क्लीयरेंस</Link>
             <Link href="/local" className="px-3 py-2 text-sm font-medium hover:text-[var(--primary)] whitespace-nowrap">लोकल</Link>
+            <Link href="/festivals" className="px-3 py-2 text-sm font-bold hover:text-[var(--primary)] whitespace-nowrap">🪔 Festivals</Link>
+            <Link href="/marketplace" className="px-3 py-2 text-sm font-medium hover:text-[var(--primary)] whitespace-nowrap">Marketplace</Link>
+            <Link href="/track" className="px-3 py-2 text-sm font-medium hover:text-[var(--primary)] whitespace-nowrap">Track Order</Link>
+            <Link href="/seller" className="px-3 py-2 text-sm font-bold text-[var(--primary)] whitespace-nowrap">Sell on Sastabazaar</Link>
             <span className="w-px h-4 bg-gray-200 mx-1" />
             {CATEGORIES.slice(0, 8).map(c => (
               <Link key={c.id} href={`/category/${c.slug}`} className="px-3 py-2 text-sm text-gray-600 hover:text-[var(--primary)] whitespace-nowrap">
@@ -165,6 +169,11 @@ export function Header() {
                 <Link href="/purana" onClick={() => setMenuOpen(false)} className="block px-3 py-2 rounded-lg hover:bg-gray-100">पुराना बाज़ार</Link>
                 <Link href="/clearance" onClick={() => setMenuOpen(false)} className="block px-3 py-2 rounded-lg hover:bg-gray-100">क्लीयरेंस</Link>
                 <Link href="/local" onClick={() => setMenuOpen(false)} className="block px-3 py-2 rounded-lg hover:bg-gray-100">लोकल</Link>
+                <Link href="/festivals" onClick={() => setMenuOpen(false)} className="block px-3 py-2 rounded-lg hover:bg-gray-100 font-bold">🪔 Festivals</Link>
+                <Link href="/marketplace" onClick={() => setMenuOpen(false)} className="block px-3 py-2 rounded-lg hover:bg-gray-100">Marketplace</Link>
+                <Link href="/track" onClick={() => setMenuOpen(false)} className="block px-3 py-2 rounded-lg hover:bg-gray-100">Track Order</Link>
+                <Link href="/contact" onClick={() => setMenuOpen(false)} className="block px-3 py-2 rounded-lg hover:bg-gray-100">Contact Us</Link>
+                <Link href="/seller" onClick={() => setMenuOpen(false)} className="block px-3 py-2 rounded-lg bg-[var(--primary)]/10 text-[var(--primary)] font-bold">Sell on Sastabazaar</Link>
                 <div className="border-t my-2" />
                 <div className="text-xs font-bold text-gray-500 uppercase px-3 py-1">Categories</div>
                 {CATEGORIES.map(c => (
