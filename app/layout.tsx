@@ -5,6 +5,7 @@ import { ThemeProvider } from '@/components/ui/ThemeProvider';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { BottomNav } from '@/components/layout/BottomNav';
+import { CelebrationBlast } from '@/components/festival/CelebrationBlast';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' });
 const noto = Noto_Sans_Devanagari({ subsets: ['devanagari'], variable: '--font-noto', display: 'swap' });
@@ -37,6 +38,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <main className="min-h-screen pb-20 lg:pb-0">{children}</main>
           <Footer />
           <BottomNav />
+          <CelebrationBlast />
         </ThemeProvider>
       </body>
     </html>
