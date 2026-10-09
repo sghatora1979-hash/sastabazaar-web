@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { Package, ShoppingBag, Wallet, Plus, Trash2, Truck, LogOut, CheckCircle2, Clock, Bell, Send, ImagePlus, X, Sparkles, Ruler } from 'lucide-react';
+import { Package, ShoppingBag, Wallet, Plus, Trash2, Truck, LogOut, CheckCircle2, Clock, Bell, Send, ImagePlus, X, Sparkles, Ruler, ShieldCheck, Lock, FileText } from 'lucide-react';
 import { CATEGORIES } from '@/lib/categories';
 import { formatINR } from '@/lib/utils';
 import {
@@ -12,6 +12,7 @@ import {
   getOrdersForSeller, markShipped, sellerStats, SellerProduct, Order,
   COMMISSION_RATE, COMMISSION_MAX_PER_ORDER, COMMISSION_OLD_FLAT,
   CONDITION_LABELS, ProductCondition, CLOTH_SIZES, SHOE_SIZES,
+  payoutsUnlocked, verificationProgress,
 } from '@/lib/seller';
 import { getTgSettings, saveTgSettings, getAlertLog, sendTelegramMessage, AlertLogEntry } from '@/lib/notify';
 
@@ -48,6 +49,7 @@ export default function SellerDashboard() {
 
   // add-product form
   const [title, setTitle] = useState('');
+  const [titleHi, setTitleHi] = useState('');
   const [price, setPrice] = useState('');
   const [mrp, setMrp] = useState('');
   const [cat, setCat] = useState('fashion-men');
@@ -71,8 +73,8 @@ export default function SellerDashboard() {
     ensureSeed();
     const s = getSessionSeller();
     if (!s) { router.replace('/seller'); return; }
-    if (s.kycStatus !== 'verified') { router.replace('/seller/kyc'); return; }
-    if (!s.agreement) { router.replace('/seller/agreement'); return; }
+    // Express onboarding: sellers reach the dashboard right after registration.
+    // KYC + agreement only gate PAYOUTS, never selling.
     setSeller(s);
     reload(s);
   }, [router]);
@@ -80,6 +82,8 @@ export default function SellerDashboard() {
   if (!seller) return <div className="max-w-4xl mx-auto px-4 py-16 text-center text-gray-500">Loading…</div>;
 
   const stats = sellerStats(seller.id);
+  const unlocked = payoutsUnlocked(seller);
+  const progress = verificationProgress(seller);
 
   const fileToDataUrl = (file: File): Promise<string> => new Promise((resolve, reject) => {
     const r = new FileReader();
@@ -128,11 +132,12 @@ export default function SellerDashboard() {
     if (!p || p <= 0) { setFormError('Enter a valid selling price.'); return; }
     const imgs = photos.length ? photos : [IMG_FOR[cat] ?? '/images/home-1.jpg'];
     addSellerProduct({
-      sellerId: seller.id, title: title.trim(), price: p, mrp: m >= p ? m : p,
+      sellerId: seller.id, title: title.trim(), titleHi: titleHi.trim() || undefined,
+      price: p, mrp: m >= p ? m : p,
       categorySlug: cat, image: imgs[0], images: imgs, sizes, description: description.trim(),
       stock: st > 0 ? st : 1, condition,
     });
-    setTitle(''); setPrice(''); setMrp(''); setStock('10'); setCondition('new');
+    setTitle(''); setTitleHi(''); setPrice(''); setMrp(''); setStock('10'); setCondition('new');
     setPhotos([]); setDescription(''); setSizes([]);
     reload(seller);
   };
@@ -180,17 +185,76 @@ export default function SellerDashboard() {
         </button>
       </div>
 
+      {/* verification banner — payouts gate, never blocks selling */}
+      {unlocked ? (
+        <div className="mt-6 bg-green-50 border border-green-200 rounded-3xl p-4 flex items-center gap-3">
+          <span className="w-10 h-10 shrink-0 rounded-2xl bg-green-500 text-white flex items-center justify-center">
+            <CheckCircle2 size={20} />
+          </span>
+          <div className="text-sm">
+            <span className="font-extrabold text-green-800">Payouts unlocked.</span>{' '}
+            <span className="text-green-700">Your KYC is verified and the agreement is signed — earnings will be settled to you.</span>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-6 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-3xl p-5">
+          <div className="flex items-center gap-2">
+            <ShieldCheck size={20} className="text-amber-600" />
+            <span className="font-extrabold text-gray-900">You&apos;re selling — unlock payouts</span>
+            <span className="ml-auto text-xs font-bold text-amber-700 bg-amber-100 px-2.5 py-1 rounded-full">
+              {progress.done} of {progress.total} done
+            </span>
+          </div>
+          <div className="mt-3 h-2 bg-amber-100 rounded-full overflow-hidden">
+            <div className="h-full bg-gradient-to-r from-amber-400 to-orange-500 rounded-full transition-all"
+              style={{ width: `${(progress.done / progress.total) * 100}%` }} />
+          </div>
+          <div className="mt-3 space-y-2 text-sm">
+            <div className="flex items-center gap-2 text-gray-700">
+              <CheckCircle2 size={16} className="text-green-500 shrink-0" />
+              <span><b>Registered</b> — your shop is open</span>
+            </div>
+            <div className="flex items-center gap-2 text-gray-700">
+              {progress.kyc
+                ? <CheckCircle2 size={16} className="text-green-500 shrink-0" />
+                : <span className="w-4 h-4 shrink-0 rounded-full border-2 border-gray-300" />}
+              <span><b>KYC</b> — Aadhaar + selfie verification</span>
+              {!progress.kyc && (
+                <button onClick={() => router.push('/seller/kyc')}
+                  className="ml-auto text-xs font-bold text-white bg-[var(--primary)] px-3 py-1.5 rounded-full">
+                  Complete KYC
+                </button>
+              )}
+            </div>
+            <div className="flex items-center gap-2 text-gray-700">
+              {progress.agreement
+                ? <CheckCircle2 size={16} className="text-green-500 shrink-0" />
+                : <span className="w-4 h-4 shrink-0 rounded-full border-2 border-gray-300" />}
+              <span><b>Seller agreement</b> — read & sign the contract</span>
+              {!progress.agreement && (
+                <button onClick={() => router.push('/seller/agreement')}
+                  className="ml-auto text-xs font-bold text-white bg-[var(--primary)] px-3 py-1.5 rounded-full">
+                  Sign agreement
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-6">
         {[
-          { l: 'Total sales', v: formatINR(stats.revenue) },
-          { l: 'Your payout', v: formatINR(stats.payout) },
-          { l: 'SastaBazaar fee', v: formatINR(stats.fee) },
-          { l: 'New orders to ship', v: String(stats.pending) },
-        ].map(({ l, v }) => (
+          { l: 'Total sales', v: formatINR(stats.revenue), locked: false },
+          { l: 'Your payout', v: unlocked ? formatINR(stats.payout) : 'Locked', locked: !unlocked },
+          { l: 'SastaBazaar fee', v: formatINR(stats.fee), locked: false },
+          { l: 'New orders to ship', v: String(stats.pending), locked: false },
+        ].map(({ l, v, locked }) => (
           <div key={l} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-            <div className="text-xs text-gray-500">{l}</div>
-            <div className="text-xl font-black text-gray-900 mt-1">{v}</div>
+            <div className="text-xs text-gray-500 inline-flex items-center gap-1">
+              {l} {locked && <Lock size={11} className="text-amber-500" />}
+            </div>
+            <div className={`text-xl font-black mt-1 ${locked ? 'text-amber-500' : 'text-gray-900'}`}>{v}</div>
           </div>
         ))}
       </div>
@@ -220,6 +284,12 @@ export default function SellerDashboard() {
               <div className="mt-4 space-y-3">
                 <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Product title"
                   className="w-full px-4 py-3 bg-gray-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40" />
+                <label className="block">
+                  <span className="text-xs font-bold text-gray-500">Product name in Hindi <span className="font-normal text-gray-400">(optional)</span></span>
+                  <input value={titleHi} onChange={e => setTitleHi(e.target.value)} placeholder="e.g. मिक्सी"
+                    className="mt-1 w-full px-4 py-3 bg-gray-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40" />
+                  <span className="text-[10px] text-gray-400">Helps Hindi-speaking buyers find your product.</span>
+                </label>
                 <div>
                   <span className="text-xs font-bold text-gray-500">Photos — up to 6 (first = cover)</span>
                   <div className="flex flex-wrap gap-2 mt-1">
@@ -324,6 +394,7 @@ export default function SellerDashboard() {
                   </span>
                   <div className="flex-1 min-w-0">
                     <div className="font-bold text-gray-900 truncate">{p.title}</div>
+                    {p.titleHi && <div className="text-xs text-gray-500 truncate">{p.titleHi}</div>}
                     <span className={`inline-block mt-1 text-[10px] font-bold px-2 py-0.5 rounded-full w-fit ${(p.condition ?? 'new') === 'new' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
                       {CONDITION_LABELS[(p.condition ?? 'new') as ProductCondition]}
                     </span>
@@ -379,6 +450,7 @@ export default function SellerDashboard() {
                         </span>
                         <div className="flex-1 text-sm">
                           <div className="font-semibold text-gray-800">{i.title}</div>
+                          {i.titleHi && <div className="text-xs text-gray-500">{i.titleHi}</div>}
                           <div className="text-gray-500">Qty {i.qty} × {formatINR(i.price)}</div>
                         </div>
                       </div>
@@ -410,6 +482,32 @@ export default function SellerDashboard() {
 
         {tab === 'earnings' && (
           <div className="max-w-2xl">
+            {!unlocked ? (
+              <div className="bg-white rounded-3xl border-2 border-dashed border-amber-300 shadow-md p-8 text-center">
+                <span className="w-14 h-14 mx-auto rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center">
+                  <Lock size={26} />
+                </span>
+                <h2 className="font-extrabold text-xl text-gray-900 mt-4">Verify to receive payouts</h2>
+                <p className="text-sm text-gray-500 mt-2 max-w-sm mx-auto">
+                  Your sales so far: <b className="text-gray-800">{formatINR(stats.revenue)}</b> ({stats.orders} orders).
+                  Complete verification to unlock your payout of <b className="text-gray-800">{formatINR(stats.payout)}</b>.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center mt-5">
+                  {!progress.kyc && (
+                    <button onClick={() => router.push('/seller/kyc')}
+                      className="btn-primary font-bold px-6 py-3 rounded-2xl text-sm inline-flex items-center justify-center gap-2">
+                      <ShieldCheck size={16} /> Complete KYC
+                    </button>
+                  )}
+                  {!progress.agreement && (
+                    <button onClick={() => router.push('/seller/agreement')}
+                      className="font-bold px-6 py-3 rounded-2xl text-sm border-2 border-gray-200 inline-flex items-center justify-center gap-2 hover:border-[var(--primary)] hover:text-[var(--primary)]">
+                      <FileText size={16} /> Sign agreement
+                    </button>
+                  )}
+                </div>
+              </div>
+            ) : (
             <div className="bg-white rounded-3xl border border-gray-100 shadow-md p-6">
               <h2 className="font-extrabold text-lg text-gray-900">Earnings</h2>
               <div className="mt-4 space-y-3 text-sm">
@@ -428,6 +526,7 @@ export default function SellerDashboard() {
                 and a payment gateway for automatic settlement.
               </p>
             </div>
+            )}
             <div className="mt-4 bg-indigo-50 border border-indigo-100 rounded-2xl p-4 text-sm text-indigo-800 flex gap-2">
               <Clock size={18} className="shrink-0 mt-0.5" />
               <span><b>{stats.pending} order(s)</b> waiting to be shipped. Ship fast — happy customers leave 5-star reviews!</span>

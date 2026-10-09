@@ -5,6 +5,7 @@ import { User, Heart, Package, Ticket, LogOut } from 'lucide-react';
 import { PRODUCTS } from '@/lib/products';
 import { getInteractions } from '@/lib/interactions';
 import { ProductCard3D } from '@/components/3d/ProductCard3D';
+import { DisplaySettings } from '@/components/settings/DisplaySettings';
 
 const COUPON_KEY = 'sb-coupons';
 
@@ -33,6 +34,11 @@ export default function AccountPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <h1 className="text-3xl font-extrabold text-gray-900 mb-6">My Account</h1>
+
+      <h2 className="text-lg font-extrabold text-gray-900 mb-3">Display · डिस्प्ले</h2>
+      <div className="mb-8 max-w-2xl">
+        <DisplaySettings />
+      </div>
 
       <div className="grid md:grid-cols-3 gap-6 mb-10">
         <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-6">

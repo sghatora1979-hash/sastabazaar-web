@@ -92,7 +92,8 @@ export default function TrackPage() {
                   <Image src={i.image} alt="" fill className="object-cover rounded-lg" unoptimized />
                 </span>
                 <div className="flex-1 text-sm">
-                  <div className="font-semibold text-gray-800">{i.title}</div>
+                  <div className="font-bold text-gray-800">{i.titleHi || i.title}</div>
+                  {i.title && <div className="text-xs text-gray-500">{i.title}</div>}
                   <div className="text-gray-500 text-xs">Qty {i.qty} · Sold by {i.sellerName}</div>
                 </div>
                 <div className="text-sm font-bold">{formatINR(i.price * i.qty)}</div>

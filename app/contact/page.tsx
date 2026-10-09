@@ -3,6 +3,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { MapPin, Phone, Mail, Clock, MessageCircle, Send, PackageSearch, RotateCcw, Store, CheckCircle2 } from 'lucide-react';
+import { FeedbackForm } from '@/components/feedback/FeedbackForm';
 
 export default function ContactPage() {
   const [name, setName] = useState('');
@@ -157,6 +158,13 @@ export default function ContactPage() {
           className="w-full h-72 border-0"
           loading="lazy"
         />
+      </div>
+
+      {/* feedback / suggestions */}
+      <div className="mt-6 max-w-2xl mx-auto">
+        <h2 className="text-xl font-extrabold text-gray-900 text-center mb-1">Sujhav dein · Give feedback</h2>
+        <p className="text-sm text-gray-500 text-center mb-4">Help us improve SastaBazaar — your ideas shape the next update.</p>
+        <FeedbackForm />
       </div>
     </div>
   );

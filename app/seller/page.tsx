@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Store, Phone, KeyRound, ArrowRight, ShieldCheck, Truck, BadgePercent, Megaphone, Download, Sparkles } from 'lucide-react';
+import { Phone, KeyRound, ArrowRight, ShieldCheck, Truck, BadgePercent, Megaphone, Download, Sparkles, Timer } from 'lucide-react';
 import { getSessionSeller, getSellerByPhone, sendOtp, verifyOtp, setSessionSeller, ensureSeed } from '@/lib/seller';
 
 export default function SellerHub() {
@@ -34,9 +34,7 @@ export default function SellerHub() {
     if (verifyOtp(phone.trim(), code)) {
       const seller = getSellerByPhone(phone.trim())!;
       setSessionSeller(seller.id);
-      if (seller.kycStatus !== 'verified') router.replace('/seller/kyc');
-      else if (!seller.agreement) router.replace('/seller/agreement');
-      else router.replace('/seller/dashboard');
+      router.replace('/seller/dashboard');
     } else {
       setError('Wrong or expired OTP. Try again.');
     }
@@ -47,19 +45,32 @@ export default function SellerHub() {
       <div className="grid lg:grid-cols-2 gap-10 items-start">
         <div>
           <div className="inline-flex items-center gap-2 bg-[var(--primary)]/10 text-[var(--primary)] font-bold text-sm px-4 py-1.5 rounded-full">
-            <Store size={16} /> Seller Central
+            <Timer size={16} /> Start selling in 2 minutes
           </div>
           <h1 className="text-4xl font-black text-gray-900 mt-4 leading-tight">
-            Sell on Sastabazaar.<br />You ship the orders, <span className="text-[var(--primary)]">you earn.</span>
+            Sell on Sastabazaar.<br /><span className="text-[var(--primary)]">No paperwork to start.</span>
           </h1>
           <p className="text-gray-600 mt-4">
-            List your products in the morning, get orders on your phone & email, ship them yourself —
-            customers track delivery with your tracking ID. Simple dropshipping.
+            Just your phone number and shop name — list products in the morning, get orders on your phone,
+            ship them yourself. KYC and the seller agreement are only needed later, when you want payouts.
           </p>
+          <div className="mt-6 flex items-center gap-2">
+            {[
+              { n: '1', t: 'Phone' },
+              { n: '2', t: 'Shop name' },
+              { n: '3', t: 'Sell' },
+            ].map(({ n, t }, i) => (
+              <div key={t} className="flex items-center gap-2 flex-1 last:flex-none">
+                <span className="w-9 h-9 shrink-0 rounded-full bg-[var(--primary)] text-white flex items-center justify-center font-black">{n}</span>
+                <span className="text-sm font-bold text-gray-800">{t}</span>
+                {i < 2 && <ArrowRight size={16} className="text-gray-300 mx-1" />}
+              </div>
+            ))}
+          </div>
           <div className="mt-6 space-y-3">
             {[
               { icon: BadgePercent, t: 'Low commission', d: 'New products: 10% (never more than \u20b9100/order). Old / refurbished / clearance: just \u20b91 per piece.' },
-              { icon: ShieldCheck, t: 'Quick video KYC', d: 'Aadhaar front + back and a selfie saying Namaskar. Verified fast.' },
+              { icon: ShieldCheck, t: 'Sell first, verify later', d: 'Start listing products immediately. Complete KYC + sign the agreement only when you want your payouts.' },
               { icon: Truck, t: 'You ship, we bring buyers', d: 'Order alerts on phone & email. You dispatch, you share the tracking ID.' },
               { icon: Sparkles, t: 'AI listing helper', d: 'Upload 5\u20136 photos, AI writes your title & description. Clothes & shoe sizes included.' },
               { icon: Megaphone, t: 'We do ALL marketing', d: 'You only publish products & set prices. We advertise on Facebook, Google, Instagram, hoardings — everywhere.' },

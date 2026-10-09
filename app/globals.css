@@ -60,6 +60,10 @@ body {
   border: 1px solid rgba(255,255,255,0.3);
 }
 
+/* Hide scrollbars for horizontal rails (chips, flash deals) */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
 /* Scrollbar */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -88,3 +92,36 @@ img { image-rendering: -webkit-optimize-contrast; }
 
 /* Safe-area for mobile bottom nav */
 .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
+
+/* ============ Update 13: button feedback FX ============
+   Short, attractive click response (light pulse + glow) that NEVER
+   blocks navigation — pure CSS :active transition, no JS delays. */
+.btn-fx {
+  position: relative;
+  transition: transform 0.12s ease, box-shadow 0.18s ease, filter 0.18s ease;
+}
+.btn-fx:hover { filter: brightness(1.06); }
+.btn-fx:active {
+  transform: scale(0.96);
+  box-shadow: 0 0 0 6px rgba(34, 255, 136, 0.18), 0 0 22px rgba(34, 255, 136, 0.45);
+}
+
+/* Diya flame flicker (festival greeting) */
+@keyframes diya-flicker {
+  0%, 100% { transform: translateX(-50%) scaleY(1); opacity: 1; }
+  30% { transform: translateX(-52%) scaleY(1.12); opacity: 0.92; }
+  60% { transform: translateX(-48%) scaleY(0.94); opacity: 1; }
+}
+.diya-flame {
+  transform-origin: bottom center;
+  animation: diya-flicker 1.6s ease-in-out infinite;
+  box-shadow: 0 0 12px 3px rgba(255, 178, 60, 0.55);
+}
+
+/* Reduced-motion / lightweight mode: kill decorative animation */
+.sb-reduced-motion .diya-flame,
+.sb-lightweight .diya-flame { animation: none; }
+.sb-reduced-motion .btn-fx:active,
+.sb-lightweight .btn-fx:active { box-shadow: none; }
+.sb-reduced-motion canvas[aria-hidden="true"],
+.sb-lightweight canvas[aria-hidden="true"] { display: none; }

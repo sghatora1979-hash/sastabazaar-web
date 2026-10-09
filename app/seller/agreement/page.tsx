@@ -127,6 +127,9 @@ export default function SellerAgreement() {
         <button onClick={sign} className="btn-primary w-full font-bold py-3.5 rounded-2xl mt-5">
           Sign Agreement & Open Dashboard
         </button>
+        <button onClick={() => router.push('/seller/dashboard')} className="w-full text-sm text-gray-500 mt-3">
+          I&apos;ll sign later
+        </button>
 
         <a href="/seller-agreement-form.pdf" download
           className="mt-3 w-full inline-flex items-center justify-center gap-2 font-bold py-3 rounded-2xl border-2 border-gray-200 text-gray-700 hover:border-[var(--primary)] hover:text-[var(--primary)] transition text-sm">

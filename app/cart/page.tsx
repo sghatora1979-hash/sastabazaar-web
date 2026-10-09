@@ -15,7 +15,7 @@ import {
 import { notifyNewOrder } from '@/lib/notify';
 
 type Row = {
-  id: string; title: string; price: number; mrp: number; image: string; href: string;
+  id: string; title: string; titleHi?: string; price: number; mrp: number; image: string; href: string;
   sellerId: string; sellerName: string; qty: number; condition: ProductCondition;
 };
 
@@ -55,7 +55,7 @@ export default function CartPage() {
       const p = PRODUCTS.find(p => p.id === i.id);
       if (p) {
         resolved.push({
-          id: p.id, title: p.title, price: p.price, mrp: p.mrp, image: p.image,
+          id: p.id, title: p.title, titleHi: p.titleHi, price: p.price, mrp: p.mrp, image: p.image,
           href: `/product/${p.slug}`, sellerId: 'platform', sellerName: 'Sastabazaar', qty: i.qty, condition: 'new',
         });
         continue;
@@ -63,7 +63,7 @@ export default function CartPage() {
       const sp = getAnyProduct(i.id);
       if (sp) {
         resolved.push({
-          id: sp.id, title: sp.title, price: sp.price, mrp: sp.mrp, image: sp.image,
+          id: sp.id, title: sp.title, titleHi: sp.titleHi, price: sp.price, mrp: sp.mrp, image: sp.image,
           href: sp.href, sellerId: sp.sellerId, sellerName: sp.sellerName, qty: i.qty, condition: sp.condition,
         });
       }
@@ -105,7 +105,7 @@ export default function CartPage() {
     // DEMO payment: simulate a 1.5s gateway round-trip. Real launch -> Razorpay.
     setTimeout(() => {
       const items: OrderItem[] = rows.map(r => ({
-        productId: r.id, title: r.title, price: r.price, qty: r.qty,
+        productId: r.id, title: r.title, titleHi: r.titleHi, price: r.price, qty: r.qty,
         image: r.image, sellerId: r.sellerId, sellerName: r.sellerName, condition: r.condition,
       }));
       const order = createOrder(
@@ -219,7 +219,8 @@ export default function CartPage() {
                     <Image src={r.image} alt={r.title} fill className="object-cover rounded-xl" unoptimized />
                   </Link>
                   <div className="flex-1 min-w-0">
-                    <Link href={r.href} className="font-semibold text-gray-900 line-clamp-2 hover:text-[var(--primary)]">{r.title}</Link>
+                    <Link href={r.href} className="font-bold text-gray-900 line-clamp-2 hover:text-[var(--primary)]">{r.titleHi || r.title}</Link>
+                    {r.title && <div className="text-[11px] text-gray-500 truncate">{r.title}</div>}
                     <div className="text-[11px] text-gray-500 mt-0.5">Sold by {r.sellerName}{r.condition !== 'new' && <span className="ml-1 font-bold text-amber-600">· {CONDITION_LABELS[r.condition]}</span>}</div>
                     <div className="flex items-baseline gap-2 mt-1">
                       <span className="font-extrabold text-[var(--primary)]">{formatINR(r.price)}</span>

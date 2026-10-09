@@ -173,6 +173,9 @@ export default function SellerKyc() {
           <button onClick={submit} className="btn-primary w-full font-bold py-3.5 rounded-2xl">
             Submit KYC
           </button>
+          <button onClick={() => router.push('/seller/dashboard')} className="w-full text-sm text-gray-500">
+            Skip for now — I&apos;ll verify later
+          </button>
           <p className="text-xs text-gray-400 text-center">
             Demo: documents stay in this browser only. Real launch needs secure private storage —
             never store Aadhaar/selfies in a public place.
