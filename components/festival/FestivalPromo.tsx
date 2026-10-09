@@ -1,16 +1,15 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Zap, Gift, Sparkles } from 'lucide-react';
+import { Zap, Gift, Sparkles, ArrowRight } from 'lucide-react';
 import { Festival, festivalDate, formatFestivalDate, countdownParts } from '@/lib/festivals';
 import { fireBlast } from './CelebrationBlast';
 
-const PARTICLES = ['✨', '🎉', '💥', '⭐', '🛍️', '💰', '🎊', '🔥'];
+const PARTICLES = ['✨', '⭐', '🛍️', '🔥'];
 
 /**
- * Temu/Shein-style mega promo banner — but more advanced:
- * 3D tilt on hover, animated gradient, shine sweep, floating particles,
- * live countdown, hourly lucky-draw teaser.
+ * Sleeker festival mega-sale banner: keeps the 3D tilt, live countdown,
+ * shine sweep and celebration blast — with a cleaner, premium finish.
  */
 export function FestivalPromo({ festival }: { festival: Festival }) {
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -31,7 +30,7 @@ export function FestivalPromo({ festival }: { festival: Festival }) {
     const r = el.getBoundingClientRect();
     const px = (e.clientX - r.left) / r.width - 0.5;
     const py = (e.clientY - r.top) / r.height - 0.5;
-    setTilt({ x: -py * 10, y: px * 14 });
+    setTilt({ x: -py * 8, y: px * 12 });
   };
 
   const units: [string, number][] = [
@@ -39,20 +38,18 @@ export function FestivalPromo({ festival }: { festival: Festival }) {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 mt-6" style={{ perspective: 1200 }}>
+    <div className="max-w-7xl mx-auto px-3 sm:px-4 mt-4 sm:mt-6" style={{ perspective: 1200 }}>
       <style>{`
         @keyframes promoShine { 0% { transform: translateX(-120%) skewX(-18deg); } 100% { transform: translateX(240%) skewX(-18deg); } }
-        @keyframes promoFloat { 0%,100% { transform: translateY(0) rotate(-8deg); } 50% { transform: translateY(-16px) rotate(8deg); } }
-        @keyframes promoPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+        @keyframes promoFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
         @keyframes promoBg { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
-        @keyframes orbDrift { 0%,100% { transform: translate(0,0) scale(1); } 33% { transform: translate(60px,-40px) scale(1.25); } 66% { transform: translate(-40px,30px) scale(0.9); } }
-        @keyframes ultraGlow { 0%,100% { opacity: 0.55; } 50% { opacity: 1; } }
+        @keyframes orbDrift { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(50px,-30px) scale(1.15); } }
       `}</style>
       <div
         ref={wrapRef}
         onMouseMove={onMove}
         onMouseLeave={() => setTilt({ x: 0, y: 0 })}
-        className="relative overflow-hidden rounded-[2rem] shadow-2xl"
+        className="relative overflow-hidden rounded-[1.75rem] shadow-2xl"
         style={{
           transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
           transition: 'transform 0.15s ease-out',
@@ -65,35 +62,35 @@ export function FestivalPromo({ festival }: { festival: Festival }) {
           style={{
             background: `linear-gradient(120deg, ${festival.theme[0]}, ${festival.theme[1]}, ${festival.theme[0]})`,
             backgroundSize: '220% 220%',
-            animation: 'promoBg 8s ease-in-out infinite',
+            animation: 'promoBg 9s ease-in-out infinite',
           }}
         />
-        {/* ultra glow orbs */}
-        <div className="absolute -top-16 -left-16 w-72 h-72 rounded-full bg-white/30 blur-3xl" style={{ animation: 'orbDrift 9s ease-in-out infinite, ultraGlow 4s ease-in-out infinite' }} />
-        <div className="absolute -bottom-20 -right-10 w-80 h-80 rounded-full bg-yellow-200/40 blur-3xl" style={{ animation: 'orbDrift 11s ease-in-out infinite reverse, ultraGlow 5s ease-in-out infinite' }} />
+        {/* soft glow orbs */}
+        <div className="absolute -top-16 -right-16 w-72 h-72 rounded-full bg-white/20 blur-3xl" style={{ animation: 'orbDrift 10s ease-in-out infinite' }} />
+        <div className="absolute -bottom-20 -left-10 w-72 h-72 rounded-full bg-black/20 blur-3xl" />
         {/* shine sweep */}
-        <div className="absolute inset-y-0 w-1/3 bg-white/25 blur-xl" style={{ animation: 'promoShine 3.5s ease-in-out infinite' }} />
-        {/* floating particles */}
+        <div className="absolute inset-y-0 w-1/4 bg-white/20 blur-xl" style={{ animation: 'promoShine 4s ease-in-out infinite' }} />
+        {/* sparse floating particles */}
         {PARTICLES.map((p, i) => (
           <span
             key={i}
-            className="absolute text-2xl select-none pointer-events-none"
+            className="absolute text-xl select-none pointer-events-none"
             style={{
-              left: `${6 + i * 11}%`,
-              top: `${12 + ((i * 37) % 60)}%`,
-              animation: `promoFloat ${3 + (i % 4)}s ease-in-out infinite`,
-              animationDelay: `${i * 0.4}s`,
-              opacity: 0.85,
+              left: `${12 + i * 24}%`,
+              top: `${18 + ((i * 41) % 55)}%`,
+              animation: `promoFloat ${4 + i}s ease-in-out infinite`,
+              animationDelay: `${i * 0.7}s`,
+              opacity: 0.5,
             }}
           >
             {p}
           </span>
         ))}
 
-        <div className="relative px-6 py-8 sm:px-10 sm:py-10 text-white" style={{ transform: 'translateZ(50px)' }}>
-          <div className="flex flex-wrap items-center gap-2 text-xs font-black tracking-widest">
+        <div className="relative px-6 py-8 sm:px-10 sm:py-10 text-white" style={{ transform: 'translateZ(40px)' }}>
+          <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold tracking-widest">
             <span className="bg-black/30 rounded-full px-3 py-1 inline-flex items-center gap-1">
-              <Zap size={13} /> MEGA SALE
+              <Zap size={12} /> MEGA SALE
             </span>
             <span className="bg-black/30 rounded-full px-3 py-1">
               {festival.emoji} {formatFestivalDate(festival)}
@@ -103,22 +100,22 @@ export function FestivalPromo({ festival }: { festival: Festival }) {
             )}
           </div>
 
-          <h2 className="text-4xl sm:text-6xl font-black mt-3 drop-shadow-lg" style={{ animation: 'promoPulse 2.4s ease-in-out infinite' }}>
+          <h2 className="text-3xl sm:text-5xl font-extrabold mt-3 tracking-tight drop-shadow-md">
             {festival.emoji} {festival.sale}
           </h2>
-          <p className="mt-2 text-white/90 font-medium max-w-xl">{festival.tagline}</p>
+          <p className="mt-2 text-white/85 text-sm sm:text-base max-w-xl">{festival.tagline}</p>
 
-          <div className="flex items-center gap-2 mt-3 text-sm font-bold">
-            <Gift size={16} />
+          <div className="flex items-center gap-2 mt-3 text-[13px] font-semibold text-white/90">
+            <Gift size={15} />
             <span>Up to 90% OFF* + mystery gift on every order + hourly lucky draw</span>
           </div>
 
           {/* countdown */}
           <div className="flex gap-2 mt-5">
             {units.map(([label, v]) => (
-              <div key={label} className="bg-black/35 backdrop-blur rounded-2xl px-3 py-2 text-center min-w-[64px] border border-white/20">
-                <div className="text-2xl font-black tabular-nums">{String(v).padStart(2, '0')}</div>
-                <div className="text-[10px] font-bold tracking-widest text-white/70">{label}</div>
+              <div key={label} className="bg-white/15 backdrop-blur-md rounded-xl px-3 py-2 text-center min-w-[60px] border border-white/20">
+                <div className="text-xl sm:text-2xl font-extrabold tabular-nums">{String(v).padStart(2, '0')}</div>
+                <div className="text-[9px] font-bold tracking-widest text-white/70">{label}</div>
               </div>
             ))}
           </div>
@@ -127,13 +124,13 @@ export function FestivalPromo({ festival }: { festival: Festival }) {
             <Link
               href={`/festivals#${festival.id}`}
               onClick={() => fireBlast(true)}
-              className="bg-white text-gray-900 font-black px-8 py-3.5 rounded-full text-lg shadow-xl hover:scale-105 transition inline-flex items-center gap-2"
+              className="bg-white text-gray-900 font-bold px-7 py-3 rounded-full shadow-xl hover:scale-[1.04] transition inline-flex items-center gap-2"
             >
-              <Sparkles size={19} /> SHOP THE SALE
+              <Sparkles size={17} /> SHOP THE SALE <ArrowRight size={16} />
             </Link>
             <Link
               href="/spin-and-win"
-              className="border-2 border-white/70 text-white font-bold px-8 py-3.5 rounded-full text-lg hover:bg-white/10 transition"
+              className="border border-white/50 text-white font-bold px-7 py-3 rounded-full hover:bg-white/10 transition"
             >
               Spin & Win Extra
             </Link>

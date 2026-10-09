@@ -8,6 +8,7 @@ import { SectionBadge } from '@/components/ui/SectionBadge';
 import { LikeDislike } from '@/components/ui/LikeDislike';
 import { formatINR } from '@/lib/utils';
 import { trackView } from '@/lib/interactions';
+import { recordView } from '@/lib/recent';
 import { addToCart } from '@/lib/cart';
 import { ShareButtons } from '@/components/ui/ShareButtons';
 import { Star, MapPin, ShieldCheck, Truck, RotateCcw, Store, Check } from 'lucide-react';
@@ -18,6 +19,7 @@ export function ProductDetail({ product, categorySlug }: { product: Product; cat
 
   useEffect(() => {
     trackView(product.id);
+    recordView(product.id); // recently viewed (search page) — demo browser storage
   }, [product.id]);
 
   const handleAdd = () => {
@@ -83,8 +85,8 @@ export function ProductDetail({ product, categorySlug }: { product: Product; cat
           <span className="text-gray-700 font-medium">{product.subcategory}</span>
         </div>
 
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 mt-2">{product.title}</h1>
-        <p className="text-gray-500 mt-1">{product.titleHi}</p>
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 mt-2">{product.titleHi || product.title}</h1>
+        <p className="text-gray-500 mt-1">{product.title}</p>
 
         <div className="flex items-center gap-3 mt-3 text-sm">
           <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 font-bold px-2.5 py-1 rounded-full">

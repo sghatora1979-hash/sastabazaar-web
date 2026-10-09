@@ -25,6 +25,11 @@ export function Footer() {
             <li><Link href="/purana" className="hover:text-white">Purana Bazaar</Link></li>
             <li><Link href="/clearance" className="hover:text-white">Clearance Bazaar</Link></li>
             <li><Link href="/local" className="hover:text-white">Local Bazaar</Link></li>
+            <li><Link href="/local-bazaar" className="hover:text-white font-semibold text-white">🛍️ Aapka Apna Local Bazaar</Link></li>
+            <li><Link href="/nursery" className="hover:text-white">🌱 Local Nursery</Link></li>
+            <li><Link href="/medicines" className="hover:text-white">💊 Medicines (Demo)</Link></li>
+            <li><Link href="/sell-local" className="hover:text-white">🏪 Register Your Shop</Link></li>
+            <li><Link href="/roadmap" className="hover:text-white">🗺️ Roadmap</Link></li>
             <li><Link href="/spin-and-win" className="hover:text-white">Spin &amp; Win</Link></li>
             <li><Link href="/festivals" className="hover:text-white font-semibold text-white">🪔 Festival Sales</Link></li>
           </ul>

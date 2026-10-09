@@ -73,10 +73,10 @@ export function ProductCard3D({ product, index = 0 }: { product: Product; index?
 
           {/* Info */}
           <div className="mt-3" style={{ transform: 'translateZ(20px)' }}>
-            <h3 className="font-semibold text-sm text-gray-900 line-clamp-2 leading-tight min-h-[2.5rem]">
-              {product.title}
+            <h3 className="font-bold text-sm text-gray-900 line-clamp-2 leading-tight min-h-[2.5rem]">
+              {product.titleHi || product.title}
             </h3>
-            <p className="text-xs text-gray-500 mt-0.5">{product.titleHi}</p>
+            <p className="text-xs text-gray-500 mt-0.5">{product.title}</p>
 
             <div className="flex items-baseline gap-2 mt-2">
               <span className="text-lg font-extrabold text-[var(--primary)]">
