@@ -64,7 +64,30 @@ export type Seller = {
   kycStatus: KycStatus;
   agreement?: { signedName: string; acceptedAt: string };
   createdAt: string;
+  // Express onboarding (2026-10-08): a small shop owner registers in 3 steps
+  // (phone -> shop -> sell). KYC + agreement are only required later to unlock
+  // payouts — listing products, orders, tracking and alerts work immediately.
+  express?: boolean;
+  shopName?: string;
+  photo?: string; // shop photo data URL (optional)
 };
+
+/** Payouts unlock only when KYC is verified AND the agreement is signed.
+ *  Existing sellers that completed the old full flow already satisfy this,
+ *  so nobody gets locked out by the migration. */
+export function payoutsUnlocked(s: Seller): boolean {
+  return s.kycStatus === 'verified' && !!s.agreement;
+}
+
+/** Verification progress for the dashboard banner: registration counts as
+ *  step 1, then KYC, then the agreement. */
+export function verificationProgress(s: Seller): {
+  done: number; total: number; kyc: boolean; agreement: boolean;
+} {
+  const kyc = s.kycStatus === 'verified';
+  const agreement = !!s.agreement;
+  return { done: 1 + (kyc ? 1 : 0) + (agreement ? 1 : 0), total: 3, kyc, agreement };
+}
 
 export type KycDoc = {
   sellerId: string;
@@ -83,6 +106,7 @@ export type SellerProduct = {
   id: string;
   sellerId: string;
   title: string;
+  titleHi?: string; // optional Hindi name, e.g. "मिक्सी" — hides gracefully when absent
   price: number;
   mrp: number;
   categorySlug: string;
@@ -101,6 +125,7 @@ export const SHOE_SIZES = ['UK 6', 'UK 7', 'UK 8', 'UK 9', 'UK 10', 'UK 11'];
 export type OrderItem = {
   productId: string;
   title: string;
+  titleHi?: string; // optional Hindi name, carried through from the product at order time
   price: number;
   qty: number;
   image: string;
@@ -323,14 +348,14 @@ export function sellerStats(sellerId: string) {
 
 /** Resolve any product id (demo catalog or seller product) for cart/checkout. */
 export function getAnyProduct(id: string): {
-  id: string; title: string; price: number; mrp: number; image: string;
+  id: string; title: string; titleHi?: string; price: number; mrp: number; image: string;
   sellerId: string; sellerName: string; href: string; condition: ProductCondition;
 } | undefined {
   const sp = getSellerProducts().find(p => p.id === id);
   if (sp) {
     const seller = getSellerById(sp.sellerId);
     return {
-      id: sp.id, title: sp.title, price: sp.price, mrp: sp.mrp, image: sp.image,
+      id: sp.id, title: sp.title, titleHi: sp.titleHi, price: sp.price, mrp: sp.mrp, image: sp.image,
       sellerId: sp.sellerId, sellerName: seller?.name ?? 'Seller',
       href: '/marketplace', condition: sp.condition ?? 'new',
     };
