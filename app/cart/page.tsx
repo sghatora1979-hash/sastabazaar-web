@@ -13,6 +13,8 @@ import {
   PaymentMethod, Order,
 } from '@/lib/seller';
 import { notifyNewOrder } from '@/lib/notify';
+import { useAuth } from '@/lib/auth';
+import { getDbCart, setDbCartQty, placeDbOrder } from '@/lib/db/shop';
 
 type Row = {
   id: string; title: string; titleHi?: string; price: number; mrp: number; image: string; href: string;
@@ -34,9 +36,12 @@ const METHOD_LABELS: Record<PaymentMethod, string> = {
 };
 
 export default function CartPage() {
+  const { ready, user, configured } = useAuth();
+  const dbMode = !!(ready && user && configured); // real DB cart + real orders
   const [rows, setRows] = useState<Row[]>([]);
   const [step, setStep] = useState<Step>('cart');
   const [placed, setPlaced] = useState<Order | null>(null);
+  const [placedDb, setPlacedDb] = useState<{ id: string; total: number } | null>(null);
   const [paying, setPaying] = useState(false);
 
   const [name, setName] = useState('');
@@ -48,6 +53,18 @@ export default function CartPage() {
   const [upiId, setUpiId] = useState('');
 
   const reload = () => {
+    if (dbMode) {
+      // Signed in: cart lives in Supabase (survives devices).
+      getDbCart().then(lines => {
+        setRows(lines.filter(l => l.product).map(l => ({
+          id: l.product_id, title: l.product!.title, titleHi: l.product!.titleHi,
+          price: l.product!.price, mrp: l.product!.mrp, image: l.product!.image,
+          href: `/product/${l.product!.slug}`, sellerId: 'db', sellerName: l.product!.seller,
+          qty: l.qty, condition: 'new' as ProductCondition,
+        })));
+      }).catch(() => setRows([]));
+      return;
+    }
     ensureSeed();
     const items = getCart();
     const resolved: Row[] = [];
@@ -79,7 +96,23 @@ export default function CartPage() {
       window.removeEventListener('sb-cart', reload);
       window.removeEventListener('storage', reload);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Re-resolve when auth state settles (guest cart -> DB cart after login).
+  useEffect(() => {
+    if (ready) reload();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, user]);
+
+  const chQty = (id: string, qty: number) => {
+    if (dbMode) { void setDbCartQty(id, qty).then(reload).catch(() => {}); }
+    else setQty(id, qty); // dispatches sb-cart -> reload via listener
+  };
+  const rmItem = (id: string) => {
+    if (dbMode) { void setDbCartQty(id, 0).then(reload).catch(() => {}); }
+    else removeFromCart(id);
+  };
 
   const subtotal = rows.reduce((s, r) => s + r.price * r.qty, 0);
   const mrpTotal = rows.reduce((s, r) => s + r.mrp * r.qty, 0);
@@ -93,6 +126,26 @@ export default function CartPage() {
     if (phone.trim().replace(/\D/g, '').length < 10) { setFormError('Please enter a valid phone number.'); return; }
     if (address.trim().length < 10) { setFormError('Please enter your full delivery address.'); return; }
     setStep('payment');
+  };
+
+  /** Real order path (logged in): server-verified prices, live stock check,
+   *  payment stays 'pending' — online payment integration comes separately. */
+  const placeRealOrder = () => {
+    setFormError('');
+    if (name.trim().length < 2) { setFormError('Please enter your name.'); return; }
+    if (phone.trim().replace(/\D/g, '').length < 10) { setFormError('Please enter a valid phone number.'); return; }
+    if (address.trim().length < 10) { setFormError('Please enter your full delivery address.'); return; }
+    setPaying(true);
+    const key = `web-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    placeDbOrder(rows.map(r => ({ product_id: r.id, qty: r.qty })), null, key).then(res => {
+      setPaying(false);
+      if (res.ok && res.orderId) {
+        setPlacedDb({ id: res.orderId, total });
+        setRows([]);
+      } else {
+        setFormError(res.error ?? 'Order failed. Please try again.');
+      }
+    });
   };
 
   const pay = () => {
@@ -126,6 +179,22 @@ export default function CartPage() {
       setPlaced(order);
     }, 1500);
   };
+
+  if (placedDb) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-12">
+        <motion.div initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center">
+          <PackageCheck size={72} className="mx-auto text-green-500" />
+          <h1 className="text-3xl font-extrabold text-gray-900 mt-4">Order placed!</h1>
+          <p className="text-gray-500 mt-2">Real order saved to your account</p>
+          <p className="text-2xl font-black font-mono text-[var(--primary)]">{placedDb.id.slice(0, 8)}</p>
+          <p className="text-gray-600 mt-3">Total {formatINR(placedDb.total)} · pay on delivery</p>
+          <p className="text-xs text-gray-400 mt-2">Track it anytime in My Account → Orders.</p>
+          <Link href="/" className="btn-primary inline-block mt-6 font-bold px-8 py-3 rounded-full">Continue Shopping</Link>
+        </motion.div>
+      </div>
+    );
+  }
 
   if (placed) {
     const sellerPayout = placed.subtotal - placed.platformFee;
@@ -207,6 +276,11 @@ export default function CartPage() {
           </div>
         ))}
       </div>
+      {ready && !user && configured && (
+        <div className="mb-6 bg-blue-50 border border-blue-200 rounded-2xl px-4 py-3 text-sm text-blue-900">
+          <Link href="/account" className="font-bold underline">Log in</Link> to save your cart across devices and place a real order.
+        </div>
+      )}
 
       <div className="grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
@@ -228,11 +302,11 @@ export default function CartPage() {
                     </div>
                     <div className="flex items-center justify-between mt-2">
                       <div className="flex items-center gap-2 bg-gray-100 rounded-full px-2 py-1">
-                        <button onClick={() => setQty(r.id, r.qty - 1)} className="p-1 hover:bg-white rounded-full" aria-label="Decrease"><Minus size={14} /></button>
+                        <button onClick={() => chQty(r.id, r.qty - 1)} className="p-1 hover:bg-white rounded-full" aria-label="Decrease"><Minus size={14} /></button>
                         <span className="text-sm font-bold w-6 text-center">{r.qty}</span>
-                        <button onClick={() => setQty(r.id, r.qty + 1)} className="p-1 hover:bg-white rounded-full" aria-label="Increase"><Plus size={14} /></button>
+                        <button onClick={() => chQty(r.id, r.qty + 1)} className="p-1 hover:bg-white rounded-full" aria-label="Increase"><Plus size={14} /></button>
                       </div>
-                      <button onClick={() => removeFromCart(r.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-full" aria-label="Remove"><Trash2 size={18} /></button>
+                      <button onClick={() => rmItem(r.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-full" aria-label="Remove"><Trash2 size={18} /></button>
                     </div>
                   </div>
                 </motion.div>
@@ -258,7 +332,27 @@ export default function CartPage() {
             </div>
           )}
 
-          {step === 'payment' && (
+          {step === 'payment' && (dbMode ? (
+            <div className="bg-white rounded-3xl border border-gray-100 shadow-md p-6">
+              <div className="bg-green-50 border border-green-200 rounded-2xl p-4 text-sm text-green-900 mb-4">
+                <b>Real order.</b> Your order is saved to SastaBazaar's database with a live stock check and
+                server-verified prices. Payment is collected on delivery — online payments are coming soon.
+              </div>
+              <div className="text-sm text-gray-600 mb-4">
+                Deliver to: <b>{name}</b>, {phone}<br />{address}
+              </div>
+              {formError && <p className="text-sm text-red-600 mb-3">{formError}</p>}
+              <div className="flex gap-3">
+                <button onClick={() => setStep('details')} disabled={paying}
+                  className="font-bold px-6 py-3 rounded-2xl border border-gray-300 text-sm disabled:opacity-50">Back</button>
+                <button onClick={placeRealOrder} disabled={paying}
+                  className="btn-primary flex-1 font-bold py-3.5 rounded-2xl inline-flex items-center justify-center gap-2 disabled:opacity-60">
+                  {paying ? <><Loader2 size={18} className="animate-spin" /> Placing order…</> : <>Place Order · {formatINR(total)}</>}
+                </button>
+              </div>
+              <p className="text-xs text-gray-400 mt-3">No money moves online in this step. The seller sees your order in their dashboard.</p>
+            </div>
+          ) : (
             <div className="bg-white rounded-3xl border border-gray-100 shadow-md p-6">
               <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 text-xs text-amber-800 mb-4">
                 <b>Demo mode:</b> no real money moves. Real launch connects Razorpay (UPI/cards),
@@ -313,7 +407,7 @@ export default function CartPage() {
                 </button>
               </div>
             </div>
-          )}
+          ))}
         </div>
 
         <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-6 h-fit sticky top-24">

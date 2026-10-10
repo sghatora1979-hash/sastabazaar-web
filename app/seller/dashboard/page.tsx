@@ -17,6 +17,9 @@ import {
 } from '@/lib/seller';
 import { getTgSettings, saveTgSettings, getAlertLog, sendTelegramMessage, AlertLogEntry } from '@/lib/notify';
 import { BulkImport } from '@/components/seller/BulkImport';
+import { useAuth } from '@/lib/auth';
+import { getMySeller, type MySeller } from '@/lib/db/shop';
+import { DbDashboard } from './DbDashboard';
 
 const IMG_FOR: Record<string, string> = {
   mobiles: '/images/mobiles-1.jpg', electronics: '/images/electronics-1.png',
@@ -35,6 +38,11 @@ type Tab = 'products' | 'orders' | 'earnings' | 'alerts';
 
 export default function SellerDashboard() {
   const router = useRouter();
+  const { ready, user, configured, signOut } = useAuth();
+  const realMode = !!(ready && user && configured); // logged-in Supabase user
+  const [dbSeller, setDbSeller] = useState<MySeller | null>(null);
+  const [dbStatus, setDbStatus] = useState<string | null>(null);
+  const [dbChecked, setDbChecked] = useState(false);
   const [seller, setSeller] = useState<Seller | null>(null);
   const [tab, setTab] = useState<Tab>('products');
   const [products, setProducts] = useState<SellerProduct[]>([]);
@@ -75,13 +83,60 @@ export default function SellerDashboard() {
 
   useEffect(() => {
     ensureSeed();
+    if (!ready) return;
+    if (realMode) {
+      // Real account: needs an APPROVED seller record in Supabase.
+      getMySeller()
+        .then(s => {
+          setDbStatus(s?.status ?? null);
+          setDbSeller(s && s.status === 'approved' ? s : null);
+          setDbChecked(true);
+        })
+        .catch(() => setDbChecked(true));
+      return;
+    }
     const s = getSessionSeller();
     if (!s) { router.replace('/seller'); return; }
     // Express onboarding: sellers reach the dashboard right after registration.
     // KYC + agreement only gate PAYOUTS, never selling.
     setSeller(s);
     reload(s);
-  }, [router]);
+  }, [router, ready, realMode]);
+
+  // Real-account branch: approved sellers get the DB dashboard; applicants
+  // see their approval status; everyone else is sent to register.
+  if (realMode) {
+    if (!dbChecked) return <div className="max-w-4xl mx-auto px-4 py-16 text-center text-gray-500">Loading…</div>;
+    if (dbSeller) {
+      return <DbDashboard seller={dbSeller} onLogout={() => { void signOut().then(() => router.replace('/seller')); }} />;
+    }
+    return (
+      <div className="max-w-xl mx-auto px-4 py-16 text-center">
+        <Clock size={48} className="mx-auto text-amber-500" />
+        <h1 className="text-2xl font-extrabold text-gray-900 mt-4">
+          {dbStatus === 'pending' ? 'Application under review' : dbStatus === 'rejected' ? 'Application not approved' : 'No seller application yet'}
+        </h1>
+        <p className="text-sm text-gray-500 mt-2">
+          {dbStatus === 'pending'
+            ? 'Our team reviews every seller application, usually within 24 hours. Your dashboard unlocks as soon as you are approved.'
+            : dbStatus === 'rejected'
+              ? 'Your application was not approved. Please contact support for details.'
+              : 'You have not applied as a seller yet.'}
+        </p>
+        <div className="mt-6 flex gap-3 justify-center">
+          {!dbStatus && (
+            <button onClick={() => router.replace('/seller/register')} className="btn-primary font-bold px-6 py-3 rounded-2xl">
+              Apply as Seller
+            </button>
+          )}
+          <button onClick={() => { void signOut().then(() => router.replace('/seller')); }}
+            className="font-bold px-6 py-3 rounded-2xl border border-gray-300 text-gray-600">
+            Log out
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!seller) return <div className="max-w-4xl mx-auto px-4 py-16 text-center text-gray-500">Loading…</div>;
 

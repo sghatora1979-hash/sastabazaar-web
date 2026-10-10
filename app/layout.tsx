@@ -7,6 +7,7 @@ import { Footer } from '@/components/layout/Footer';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { CelebrationBlast } from '@/components/festival/CelebrationBlast';
 import { primeProductCache } from '@/lib/db/products';
+import { AuthProvider } from '@/lib/auth';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' });
 const noto = Noto_Sans_Devanagari({ subsets: ['devanagari'], variable: '--font-noto', display: 'swap' });
@@ -39,11 +40,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="hi" className={`${inter.variable} ${noto.variable}`}>
       <body>
         <ThemeProvider>
+          <AuthProvider>
           <Header />
           <main className="min-h-screen pb-20 lg:pb-0">{children}</main>
           <Footer />
           <BottomNav />
           <CelebrationBlast />
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

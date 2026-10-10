@@ -5,9 +5,15 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Phone, KeyRound, ArrowRight, ShieldCheck, Truck, BadgePercent, Megaphone, Download, Sparkles, Timer } from 'lucide-react';
 import { getSessionSeller, getSellerByPhone, sendOtp, verifyOtp, setSessionSeller, ensureSeed } from '@/lib/seller';
+import { useAuth } from '@/lib/auth';
+import { getMySeller } from '@/lib/db/shop';
 
 export default function SellerHub() {
   const router = useRouter();
+  const { ready, user, configured, signOut } = useAuth();
+  const realMode = !!(ready && user && configured);
+  const [dbStatus, setDbStatus] = useState<string | null>(null);
+  const [dbChecked, setDbChecked] = useState(false);
   const [phone, setPhone] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [demoCode, setDemoCode] = useState('');
@@ -16,8 +22,19 @@ export default function SellerHub() {
 
   useEffect(() => {
     ensureSeed();
+    if (!ready) return;
+    if (realMode) {
+      getMySeller()
+        .then(s => {
+          setDbStatus(s?.status ?? null);
+          if (s?.status === 'approved') router.replace('/seller/dashboard');
+          setDbChecked(true);
+        })
+        .catch(() => setDbChecked(true));
+      return;
+    }
     if (getSessionSeller()) router.replace('/seller/dashboard');
-  }, [router]);
+  }, [router, ready, realMode]);
 
   const requestOtp = () => {
     setError('');
@@ -93,6 +110,33 @@ export default function SellerHub() {
         </div>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-3xl border border-gray-100 shadow-xl p-6 sm:p-8">
+          {realMode ? (
+            <div>
+              <h2 className="text-2xl font-extrabold text-gray-900">Seller Centre</h2>
+              <p className="text-sm text-gray-500 mt-1">Logged in as <b>{user?.email}</b></p>
+              {!dbChecked ? (
+                <p className="text-sm text-gray-500 mt-6">Checking your seller status…</p>
+              ) : dbStatus === 'pending' ? (
+                <div className="mt-6 bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-800">
+                  <b>Application under review.</b> We usually approve genuine shops within 24 hours.
+                </div>
+              ) : dbStatus === 'rejected' ? (
+                <div className="mt-6 bg-red-50 border border-red-200 rounded-2xl p-4 text-sm text-red-800">
+                  <b>Application not approved.</b> Please contact support for details.
+                </div>
+              ) : (
+                <div className="mt-6 space-y-3">
+                  <p className="text-sm text-gray-600">Register your physical shop — name, phone, address and PIN code — and start selling after approval.</p>
+                  <button onClick={() => router.push('/seller/register')} className="btn-primary w-full font-bold py-3.5 rounded-2xl inline-flex items-center justify-center gap-2">
+                    Register Your Shop <ArrowRight size={18} />
+                  </button>
+                </div>
+              )}
+              <button onClick={() => { void signOut().then(() => window.location.reload()); }}
+                className="mt-4 w-full text-sm text-gray-500">Log out</button>
+            </div>
+          ) : (
+          <>
           <h2 className="text-2xl font-extrabold text-gray-900">Seller Login</h2>
           <p className="text-sm text-gray-500 mt-1">We send an OTP to your registered phone number.</p>
           {!otpSent ? (
@@ -144,6 +188,8 @@ export default function SellerHub() {
               <button onClick={login} className="btn-primary w-full font-bold py-3.5 rounded-2xl">Verify & Login</button>
               <button onClick={() => setOtpSent(false)} className="w-full text-sm text-gray-500">Use a different number</button>
             </div>
+          )}
+          </>
           )}
         </motion.div>
       </div>

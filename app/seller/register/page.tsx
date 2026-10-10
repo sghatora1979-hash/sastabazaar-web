@@ -5,6 +5,8 @@ import { motion } from 'framer-motion';
 import { Phone, KeyRound, ArrowRight, CheckCircle2, MapPin, Store, Camera, PartyPopper } from 'lucide-react';
 import { sendOtp, verifyOtp, getSellerByPhone, saveSeller, setSessionSeller, ensureSeed, Seller } from '@/lib/seller';
 import { STATES } from '@/lib/festivals';
+import { useAuth } from '@/lib/auth';
+import { applyAsSeller, getMySeller } from '@/lib/db/shop';
 
 /** Downscale a shop photo so it fits comfortably in browser storage. */
 function downscaleImage(file: File, maxDim = 640): Promise<string> {
@@ -30,6 +32,8 @@ const STEP_LABELS = ['Phone', 'Your shop', 'Start selling'];
 
 export default function SellerRegister() {
   const router = useRouter();
+  const { ready, user, configured } = useAuth();
+  const realMode = !!(ready && user && configured); // logged in -> real DB application
   const [step, setStep] = useState(1);
   const [phone, setPhone] = useState('');
   const [otpSent, setOtpSent] = useState(false);
@@ -39,9 +43,22 @@ export default function SellerRegister() {
   const [state, setState] = useState('UP');
   const [photo, setPhoto] = useState('');
   const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [applied, setApplied] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { ensureSeed(); }, []);
+  useEffect(() => {
+    ensureSeed();
+    // Logged-in sellers skip the demo phone step — their email login is the identity.
+    if (realMode) {
+      setStep(2);
+      getMySeller().then(s => {
+        if (s && (s.status === 'approved' || s.status === 'pending')) {
+          setApplied(true); setStep(3);
+        }
+      }).catch(() => {});
+    }
+  }, [realMode]);
 
   const startOtp = () => {
     setError('');
@@ -69,6 +86,20 @@ export default function SellerRegister() {
   const finish = () => {
     setError('');
     if (shopName.trim().length < 2) { setError('Please enter your shop name.'); return; }
+    if (realMode) {
+      // Real application -> Supabase sellers table (status 'pending', admin approves).
+      setBusy(true);
+      applyAsSeller({
+        business_name: shopName.trim(),
+        phone: phone.trim() || user?.email || '',
+        state,
+      }).then(r => {
+        setBusy(false);
+        if (r.ok) { setApplied(true); setStep(3); }
+        else setError(r.error ?? 'Application failed. Please try again.');
+      });
+      return;
+    }
     const seller: Seller = {
       id: `seller-${Date.now().toString(36)}`,
       name: shopName.trim(),
@@ -186,8 +217,8 @@ export default function SellerRegister() {
                 onChange={e => { pickPhoto(e.target.files?.[0]); e.target.value = ''; }} />
             </div>
             {error && <p className="text-sm text-red-600">{error}</p>}
-            <button onClick={finish} className="btn-primary w-full font-bold py-3.5 rounded-2xl inline-flex items-center justify-center gap-2">
-              Create My Shop <ArrowRight size={18} />
+            <button onClick={finish} disabled={busy} className="btn-primary w-full font-bold py-3.5 rounded-2xl inline-flex items-center justify-center gap-2 disabled:opacity-60">
+              {busy ? 'Submitting…' : 'Create My Shop'} <ArrowRight size={18} />
             </button>
           </div>
         )}
@@ -197,16 +228,25 @@ export default function SellerRegister() {
             <motion.div initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
               <PartyPopper size={64} className="mx-auto text-[var(--primary)]" />
               <h2 className="text-2xl font-extrabold text-gray-900 mt-4">
-                Welcome, {shopName}! Your shop is open.
+                {applied ? 'Application received!' : `Welcome, ${shopName}! Your shop is open.`}
               </h2>
               <p className="text-sm text-gray-500 mt-2 max-w-sm mx-auto">
-                You can list products, take orders and ship right away.
-                Complete KYC and sign the agreement later to unlock payouts.
+                {applied
+                  ? 'Our team reviews every seller application. You will get access to your seller dashboard as soon as you are approved — usually within 24 hours.'
+                  : 'You can list products, take orders and ship right away. Complete KYC and sign the agreement later to unlock payouts.'}
               </p>
-              <button onClick={() => router.replace('/seller/dashboard')}
-                className="btn-primary mt-6 w-full font-bold py-4 rounded-2xl text-lg inline-flex items-center justify-center gap-2">
-                Start Selling — List Your First Product <ArrowRight size={20} />
-              </button>
+              {!applied && (
+                <button onClick={() => router.replace('/seller/dashboard')}
+                  className="btn-primary mt-6 w-full font-bold py-4 rounded-2xl text-lg inline-flex items-center justify-center gap-2">
+                  Start Selling — List Your First Product <ArrowRight size={20} />
+                </button>
+              )}
+              {applied && (
+                <button onClick={() => router.replace('/')}
+                  className="btn-primary mt-6 w-full font-bold py-4 rounded-2xl text-lg">
+                  Back to Bazaar
+                </button>
+              )}
             </motion.div>
           </div>
         )}

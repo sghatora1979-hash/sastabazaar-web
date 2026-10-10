@@ -1,6 +1,7 @@
 import { Hero } from '@/components/home/Hero';
 import { MatrixIntro } from '@/components/home/MatrixIntro';
 import { LocalBazaarButton } from '@/components/home/LocalBazaarButton';
+import { ShopkeeperCta } from '@/components/home/ShopkeeperCta';
 import { FestivalGreeting } from '@/components/home/FestivalGreeting';
 import { BrandMessage } from '@/components/home/BrandMessage';
 import { BazaarSelector } from '@/components/home/BazaarSelector';
@@ -18,6 +19,7 @@ export default function HomePage() {
     <>
       <MatrixIntro />
       <LocalBazaarButton />
+      <ShopkeeperCta />
       <Hero />
       <FestivalGreeting />
       {nextFestival && <FestivalPromo festival={nextFestival} />}
