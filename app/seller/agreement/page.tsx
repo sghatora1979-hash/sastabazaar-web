@@ -38,7 +38,7 @@ export default function SellerAgreement() {
   const clauses: { title: string; body: string }[] = [
     {
       title: '1. Parties',
-      body: `This Seller Agreement is between SastaBazaar (operated by Sandeep Singh, Head Office: Bangalore, Karnataka, India) and the seller "${sellerName || '[Seller Name]'}".`,
+      body: `This Seller Agreement is between SastaBazaar \u2014 business name registration in progress, Head Office: Bangalore, Karnataka, India \u2014 and the seller "${sellerName || '[Seller Name]'}".`,
     },
     {
       title: '2. Genuine products only',
