@@ -221,10 +221,10 @@ export function BulkImport({ sellerId, onImported, importRow }: {
     for (const r of valid) {
       const p = r.product!;
       if (importRow) {
+        // DB path: the caller's importRow persists promos via products.promote_in.
         const res = await importRow(p);
         if (res.ok && res.id) {
           okCount++;
-          p.promos.forEach((k) => togglePromoPlacement(res.id!, k));
         } else {
           failures.push(`${p.title.slice(0, 30)}: ${res.error ?? 'failed'}`);
         }
