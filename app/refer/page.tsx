@@ -11,6 +11,7 @@ import {
 } from '@/lib/referral';
 import { formatINR } from '@/lib/utils';
 import { BRAND } from '@/components/store/ProductCard';
+import { SellerPromoShelf } from '@/components/store/SellerPromoShelf';
 
 export default function ReferPage() {
   const [code, setCode] = useState('');
@@ -168,10 +169,16 @@ export default function ReferPage() {
         )}
       </div>
 
+      {/* Rewards contributed by sellers */}
+      <SellerPromoShelf
+        kind="refer"
+        title="🎁 Bonus rewards from our sellers"
+        subtitle="Extra gifts sellers add on top of the cash rewards."
+      />
+
       {/* How it works */}
       <div className="mt-6 bg-white rounded-3xl border border-gray-100 shadow-sm p-5 sm:p-6">
-        <h2 className="font-extrabold text-gray-900 mb-4">How it works</h2>
-        <div className="grid sm:grid-cols-3 gap-4 text-sm">
+        <h2 className="font-extrabold text-gray-900 mb-4">How it works</h2>        <div className="grid sm:grid-cols-3 gap-4 text-sm">
           {[
             { n: '1', t: 'Share your link', d: 'Send it on WhatsApp, SMS, Telegram or email.' },
             { n: '2', t: 'Friend joins', d: `They get ${formatINR(REWARD_JOIN)} off. You earn ${formatINR(REWARD_JOIN)}.` },

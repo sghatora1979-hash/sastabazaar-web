@@ -13,8 +13,10 @@ import {
   COMMISSION_RATE, COMMISSION_MAX_PER_ORDER, COMMISSION_OLD_FLAT,
   CONDITION_LABELS, ProductCondition, CLOTH_SIZES, SHOE_SIZES,
   payoutsUnlocked, verificationProgress,
+  PROMO_LABELS, PromoKind, togglePromoPlacement, hasPromoPlacement,
 } from '@/lib/seller';
 import { getTgSettings, saveTgSettings, getAlertLog, sendTelegramMessage, AlertLogEntry } from '@/lib/notify';
+import { BulkImport } from '@/components/seller/BulkImport';
 
 const IMG_FOR: Record<string, string> = {
   mobiles: '/images/mobiles-1.jpg', electronics: '/images/electronics-1.png',
@@ -36,6 +38,7 @@ export default function SellerDashboard() {
   const [seller, setSeller] = useState<Seller | null>(null);
   const [tab, setTab] = useState<Tab>('products');
   const [products, setProducts] = useState<SellerProduct[]>([]);
+  const [promoTick, setPromoTick] = useState(0); // refresh promo toggle chips
   const [orders, setOrders] = useState<Order[]>([]);
   const [tracking, setTracking] = useState<Record<string, string>>({});
   // telegram alerts
@@ -55,6 +58,7 @@ export default function SellerDashboard() {
   const [cat, setCat] = useState('fashion-men');
   const [stock, setStock] = useState('10');
   const [condition, setCondition] = useState<ProductCondition>('new');
+  const [promos, setPromos] = useState<PromoKind[]>([]); // promo placements chosen on the add form
   const [photos, setPhotos] = useState<string[]>([]);
   const [description, setDescription] = useState('');
   const [sizes, setSizes] = useState<string[]>([]);
@@ -131,12 +135,15 @@ export default function SellerDashboard() {
     if (title.trim().length < 3) { setFormError('Enter a product title.'); return; }
     if (!p || p <= 0) { setFormError('Enter a valid selling price.'); return; }
     const imgs = photos.length ? photos : [IMG_FOR[cat] ?? '/images/home-1.jpg'];
-    addSellerProduct({
+    const created = addSellerProduct({
       sellerId: seller.id, title: title.trim(), titleHi: titleHi.trim() || undefined,
       price: p, mrp: m >= p ? m : p,
       categorySlug: cat, image: imgs[0], images: imgs, sizes, description: description.trim(),
       stock: st > 0 ? st : 1, condition,
     });
+    promos.forEach(k => togglePromoPlacement(created.id, k));
+    setPromos([]);
+    setPromoTick(t => t + 1);
     setTitle(''); setTitleHi(''); setPrice(''); setMrp(''); setStock('10'); setCondition('new');
     setPhotos([]); setDescription(''); setSizes([]);
     reload(seller);
@@ -277,6 +284,10 @@ export default function SellerDashboard() {
 
       <div className="py-6">
         {tab === 'products' && (
+          <div className="space-y-6">
+            {seller && (
+              <BulkImport sellerId={seller.id} onImported={() => seller && reload(seller)} />
+            )}
           <div className="grid lg:grid-cols-3 gap-6">
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
               className="bg-white rounded-3xl border border-gray-100 shadow-md p-6 h-fit">
@@ -375,6 +386,18 @@ export default function SellerDashboard() {
                 </div>
                 <input value={stock} onChange={e => setStock(e.target.value)} placeholder="Stock qty" inputMode="numeric"
                   className="w-full px-4 py-3 bg-gray-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40" />
+                <div>
+                  <span className="text-xs font-bold text-gray-500">Feature this product in <span className="font-normal text-gray-400">(optional — you choose)</span></span>
+                  <div className="flex flex-wrap gap-2 mt-1.5">
+                    {(Object.keys(PROMO_LABELS) as PromoKind[]).map(k => (
+                      <button key={k} type="button"
+                        onClick={() => setPromos(pv => pv.includes(k) ? pv.filter(x => x !== k) : [...pv, k])}
+                        className={`btn-fx text-xs font-bold px-3 py-1.5 rounded-full border-2 transition ${promos.includes(k) ? 'border-purple-600 bg-purple-600 text-white' : 'border-gray-200 text-gray-500'}`}>
+                        {PROMO_LABELS[k].emoji} {PROMO_LABELS[k].label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 {formError && <p className="text-sm text-red-600">{formError}</p>}
                 <button onClick={addProduct} className="btn-primary w-full font-bold py-3 rounded-2xl">List Product</button>
                 <p className="text-xs text-gray-400">Products appear on the Marketplace page instantly (demo).</p>
@@ -403,6 +426,21 @@ export default function SellerDashboard() {
                       <span className="line-through text-gray-400 text-xs">{formatINR(p.mrp)}</span>{' '}
                       <span className="text-xs text-gray-500">· Stock: {p.stock}</span>
                     </div>
+                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                      <span className="text-[10px] font-bold text-gray-400">Promote in:</span>
+                      {(Object.keys(PROMO_LABELS) as PromoKind[]).map(k => {
+                        const on = hasPromoPlacement(p.id, k);
+                        return (
+                          <button key={k}
+                            onClick={() => { togglePromoPlacement(p.id, k); setPromoTick(t => t + 1); }}
+                            className={`btn-fx text-[10px] font-bold px-2 py-1 rounded-full border ${on ? 'bg-purple-600 text-white border-purple-600' : 'bg-gray-50 text-gray-500 border-gray-200'}`}
+                            title={on ? `Remove from ${PROMO_LABELS[k].label}` : `Feature in ${PROMO_LABELS[k].label}`}
+                          >
+                            {PROMO_LABELS[k].emoji} {PROMO_LABELS[k].label}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                   <button onClick={() => { deleteSellerProduct(p.id); reload(seller); }}
                     className="self-start p-2 text-red-500 hover:bg-red-50 rounded-full" aria-label="Delete">
@@ -411,6 +449,7 @@ export default function SellerDashboard() {
                 </div>
               ))}
             </div>
+          </div>
           </div>
         )}
 

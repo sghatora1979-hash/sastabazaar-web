@@ -1,8 +1,22 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { SpinWheel3D } from '@/components/3d/SpinWheel3D';
+import { SpinWheel3D, WheelSegment } from '@/components/3d/SpinWheel3D';
+import { getPlacedProducts } from '@/lib/seller';
 import { Gift } from 'lucide-react';
+
+const DEFAULT_SEGMENTS: WheelSegment[] = [
+  { label: '10% OFF', color: '#0B3D91' },
+  { label: 'Free Ship', color: '#22C55E' },
+  { label: '5% OFF', color: '#DC2626' },
+  { label: 'Try Again', color: '#64748B' },
+  { label: '20% OFF', color: '#FF6B35' },
+  { label: 'Free Ship', color: '#14B8A6' },
+  { label: '15% OFF', color: '#7C3AED' },
+  { label: 'Jackpot!', color: '#E91E63' },
+];
+
+const PRODUCT_COLORS = ['#7C3AED', '#E91E63', '#0B3D91', '#B45309'];
 
 const COUPON_KEY = 'sb-coupons';
 
@@ -20,11 +34,29 @@ function saveCoupon(label: string) {
 export default function SpinPage() {
   const [spinsLeft, setSpinsLeft] = useState(3);
   const [history, setHistory] = useState<string[]>([]);
+  const [segments, setSegments] = useState<WheelSegment[]>(DEFAULT_SEGMENTS);
+
+  // Seller products placed into Spin & Win become wheel prize segments.
+  useEffect(() => {
+    try {
+      const placed = getPlacedProducts('spin').slice(0, 4);
+      if (placed.length > 0) {
+        const prodSegs: WheelSegment[] = placed.map((p, i) => ({
+          label: `🎁 ${p.title.slice(0, 16)}`,
+          color: PRODUCT_COLORS[i % PRODUCT_COLORS.length],
+        }));
+        const filler = DEFAULT_SEGMENTS.filter((s) => s.label !== 'Jackpot!');
+        setSegments([...prodSegs, ...filler].slice(0, 8));
+      }
+    } catch { /* default wheel */ }
+  }, []);
 
   const handleResult = (label: string) => {
     setSpinsLeft(s => Math.max(0, s - 1));
-    setHistory(h => [label, ...h].slice(0, 5));
-    if (!label.toLowerCase().includes('try again')) saveCoupon(label);
+    const isProduct = label.includes('🎁');
+    const shown = isProduct ? `${label} — seller will contact you to deliver it!` : label;
+    setHistory(h => [shown, ...h].slice(0, 5));
+    if (!isProduct && !label.toLowerCase().includes('try again')) saveCoupon(label);
   };
 
   return (
@@ -44,7 +76,7 @@ export default function SpinPage() {
 
       <div className="mt-8 flex justify-center">
         {spinsLeft > 0 ? (
-          <SpinWheel3D onResult={handleResult} />
+          <SpinWheel3D onResult={handleResult} segments={segments} />
         ) : (
           <div className="bg-white rounded-3xl shadow-3d p-10">
             <div className="text-5xl mb-3">😴</div>

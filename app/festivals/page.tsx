@@ -8,6 +8,7 @@ import {
   festivalDate, formatFestivalDate, countdownParts, Festival,
 } from '@/lib/festivals';
 import { fireBlast } from '@/components/festival/CelebrationBlast';
+import { SellerPromoShelf } from '@/components/store/SellerPromoShelf';
 
 function MiniCountdown({ f }: { f: Festival }) {
   const target = useMemo(() => festivalDate(f), [f]);
@@ -129,6 +130,13 @@ export default function FestivalsPage() {
       {filtered.length === 0 && (
         <p className="text-center text-gray-500 mt-10">No festivals found for this filter.</p>
       )}
+
+      {/* Festival picks contributed by sellers */}
+      <SellerPromoShelf
+        kind="festival"
+        title="🎪 Festival picks from our sellers"
+        subtitle="Sellers feature their festive products here — you get the best deal."
+      />
 
       <p className="text-xs text-gray-400 text-center mt-8">
         Festival dates follow the lunar calendar and can shift each year — verified for the current season.

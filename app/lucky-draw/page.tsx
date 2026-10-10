@@ -9,6 +9,7 @@ import {
 } from '@/lib/luckydraw';
 import { getCheapPicks } from '@/lib/deals';
 import { formatINR } from '@/lib/utils';
+import { SellerPromoShelf } from '@/components/store/SellerPromoShelf';
 import { BRAND } from '@/components/store/ProductCard';
 import type { Product } from '@/lib/products';
 
@@ -119,6 +120,13 @@ export default function LuckyDrawPage() {
         {prizeCard(<BadgeIndianRupee size={26} style={{ color: BRAND }} />, `${formatINR(2000)} voucher`, 'Runner-up prize')}
         {prizeCard(<Ticket size={26} style={{ color: BRAND }} />, 'Budget Picks', 'Every 10th entrant wins')}
       </div>
+
+      {/* Prizes contributed by sellers */}
+      <SellerPromoShelf
+        kind="lucky-draw"
+        title="🎡 Prizes from our sellers"
+        subtitle="Real products sellers put up as prizes — SastaBazaar brings the customers."
+      />
 
       {/* Consolation products */}
       {picks.length > 0 && (
