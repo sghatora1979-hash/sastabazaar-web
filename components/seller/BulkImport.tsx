@@ -52,15 +52,17 @@ function parsePromos(v: string): { kinds: PromoKind[]; bad: string[] } {
   return { kinds, bad };
 }
 
+export type BulkRowProduct = {
+  title: string; titleHi?: string; price: number; mrp: number;
+  categorySlug: string; image: string; description: string;
+  stock: number; condition: ProductCondition; promos: PromoKind[];
+};
+
 type Row = {
   index: number;
   raw: Record<string, string>;
   errors: string[];
-  product: {
-    title: string; titleHi?: string; price: number; mrp: number;
-    categorySlug: string; image: string; description: string;
-    stock: number; condition: ProductCondition; promos: PromoKind[];
-  } | null;
+  product: BulkRowProduct | null;
 };
 
 /** Minimal RFC-4180-ish CSV parser: handles quoted fields with commas/newlines. */
@@ -166,7 +168,13 @@ function validateRows(text: string): Row[] {
   return rows;
 }
 
-export function BulkImport({ sellerId, onImported }: { sellerId: string; onImported: () => void }) {
+export function BulkImport({ sellerId, onImported, importRow }: {
+  sellerId: string;
+  onImported: () => void;
+  /** When provided, rows are imported through this async function (e.g. Supabase)
+   *  instead of the demo localStorage store. */
+  importRow?: (p: BulkRowProduct) => Promise<{ ok: boolean; id?: string; error?: string }>;
+}) {
   const [csvText, setCsvText] = useState('');
   const [rows, setRows] = useState<Row[]>([]);
   const [parsed, setParsed] = useState(false);
@@ -206,23 +214,42 @@ export function BulkImport({ sellerId, onImported }: { sellerId: string; onImpor
     if (fileRef.current) fileRef.current.value = '';
   };
 
-  const doImport = () => {
+  const doImport = async () => {
     const valid = rows.filter((r) => r.product);
-    valid.forEach((r) => {
+    let okCount = 0;
+    const failures: string[] = [];
+    for (const r of valid) {
       const p = r.product!;
-      const created = addSellerProduct({
-        sellerId,
-        title: p.title, titleHi: p.titleHi,
-        price: p.price, mrp: p.mrp,
-        categorySlug: p.categorySlug,
-        image: p.image, images: [p.image], sizes: [],
-        description: p.description, stock: p.stock, condition: p.condition,
-      });
-      p.promos.forEach((k) => togglePromoPlacement(created.id, k));
-    });
-    setDone(`Imported ${valid.length} product${valid.length === 1 ? '' : 's'}${rows.length - valid.length ? `, skipped ${rows.length - valid.length} with errors` : ''}. They are live on the Marketplace now.`);
+      if (importRow) {
+        const res = await importRow(p);
+        if (res.ok && res.id) {
+          okCount++;
+          p.promos.forEach((k) => togglePromoPlacement(res.id!, k));
+        } else {
+          failures.push(`${p.title.slice(0, 30)}: ${res.error ?? 'failed'}`);
+        }
+      } else {
+        const created = addSellerProduct({
+          sellerId,
+          title: p.title, titleHi: p.titleHi,
+          price: p.price, mrp: p.mrp,
+          categorySlug: p.categorySlug,
+          image: p.image, images: [p.image], sizes: [],
+          description: p.description, stock: p.stock, condition: p.condition,
+        });
+        p.promos.forEach((k) => togglePromoPlacement(created.id, k));
+        okCount++;
+      }
+    }
+    setDone(
+      `Imported ${okCount} product${okCount === 1 ? '' : 's'}` +
+      (failures.length ? `, ${failures.length} failed: ${failures.slice(0, 3).join('; ')}` : '') +
+      '. They are live on the Marketplace now.'
+    );
     onImported();
-    clear();
+    // keep the confirmation visible: reset the form but not the message
+    setCsvText(''); setRows([]); setParsed(false);
+    if (fileRef.current) fileRef.current.value = '';
   };
 
   const validCount = rows.filter((r) => r.product).length;
