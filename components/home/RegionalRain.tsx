@@ -21,6 +21,11 @@ const WORDS: { text: string; lang: string }[] = [
   { text: 'చౌక బజార్', lang: 'Telugu' },
   { text: 'ಅಗ್ಗದ ಬಜಾರ್', lang: 'Kannada' },
   { text: 'വിലകുറഞ്ഞ ചന്ത', lang: 'Malayalam' },
+  { text: 'सस्तो बजार', lang: 'Nepali' },
+  { text: 'सस्तो बाजार', lang: 'Konkani' },
+  { text: 'सस्ता बजार', lang: 'Dogri' },
+  { text: 'सस्ता बजार', lang: 'Maithili' },
+  { text: 'سستو بازار', lang: 'Sindhi' },
 ];
 
 const COLORS = ['#22ff88', '#ffd23f', '#4da6ff', '#c77dff', '#38e1ff', '#ff9f1c'];
@@ -56,7 +61,7 @@ export function RegionalRain({ className = '', count = 10 }: { className?: strin
       speed: 14 + Math.random() * 22, // slow drift
       word: WORDS[Math.floor(Math.random() * WORDS.length)].text,
       color: COLORS[Math.floor(Math.random() * COLORS.length)],
-      size: 11 + Math.random() * 3, // very small
+      size: 13 + Math.random() * 3, // small but readable
     });
 
     const resize = () => {
@@ -81,12 +86,16 @@ export function RegionalRain({ className = '', count = 10 }: { className?: strin
       for (const d of drops) {
         d.y += d.speed * dt;
         if (d.y > h + 30) Object.assign(d, spawn(false));
-        ctx.globalAlpha = 0.55;
-        ctx.font = `${d.size}px system-ui, -apple-system, sans-serif`;
+        // bright + slight glow so it stays readable over the matrix rain
+        ctx.globalAlpha = 0.92;
+        ctx.font = `600 ${d.size}px system-ui, -apple-system, sans-serif`;
         ctx.fillStyle = d.color;
+        ctx.shadowColor = d.color;
+        ctx.shadowBlur = 8;
         ctx.fillText(d.word, d.x, d.y);
       }
       ctx.globalAlpha = 1;
+      ctx.shadowBlur = 0;
     };
     raf = requestAnimationFrame(draw);
 

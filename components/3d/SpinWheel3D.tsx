@@ -14,7 +14,10 @@ const SEGMENTS = [
   { label: 'Jackpot!', color: '#E91E63' },
 ];
 
-export function SpinWheel3D({ onResult }: { onResult?: (label: string) => void }) {
+export type WheelSegment = { label: string; color: string };
+
+export function SpinWheel3D({ onResult, segments }: { onResult?: (label: string) => void; segments?: WheelSegment[] }) {
+  const SEGS = segments && segments.length >= 4 ? segments : SEGMENTS;
   const [spinning, setSpinning] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [muted, setMuted] = useState(false);
@@ -86,9 +89,9 @@ export function SpinWheel3D({ onResult }: { onResult?: (label: string) => void }
     if (spinning) return;
     setSpinning(true);
     setResult(null);
-    const winner = Math.floor(Math.random() * SEGMENTS.length);
+    const winner = Math.floor(Math.random() * SEGS.length);
     // land the pointer (top) on the winning segment
-    const segAngle = 360 / SEGMENTS.length;
+    const segAngle = 360 / SEGS.length;
     const targetAngle = 360 * 6 - (winner * segAngle + segAngle / 2);
     lastSegRef.current = Math.floor(rotation.get() / segAngle);
     const controls = animate(rotation, rotation.get() + targetAngle, {
@@ -105,16 +108,16 @@ export function SpinWheel3D({ onResult }: { onResult?: (label: string) => void }
       },
       onComplete: () => {
         setSpinning(false);
-        setResult(SEGMENTS[winner].label);
+        setResult(SEGS[winner].label);
         winJingle();
-        onResult?.(SEGMENTS[winner].label);
+        onResult?.(SEGS[winner].label);
       }
     });
     return () => controls.stop();
   };
 
   const size = 300;
-  const segAngle = 360 / SEGMENTS.length;
+  const segAngle = 360 / SEGS.length;
 
   return (
     <div className="flex flex-col items-center gap-6">
@@ -126,7 +129,7 @@ export function SpinWheel3D({ onResult }: { onResult?: (label: string) => void }
           className="relative w-full h-full rounded-full shadow-3d overflow-hidden border-8 border-white"
         >
           <svg viewBox={`0 0 ${size} ${size}`} className="w-full h-full">
-            {SEGMENTS.map((s, i) => {
+            {SEGS.map((s, i) => {
               const startAngle = i * segAngle - 90;
               const endAngle = startAngle + segAngle;
               const r = size / 2;

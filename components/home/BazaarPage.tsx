@@ -1,4 +1,7 @@
-import { getProductsBySection, Section } from '@/lib/products';
+'use client';
+import { useEffect, useState } from 'react';
+import { getProductsBySection, Section, Product } from '@/lib/products';
+import { getSellerProducts, sellerProductToCatalog } from '@/lib/seller';
 import { ProductCard3D } from '@/components/3d/ProductCard3D';
 import { SectionBadge } from '@/components/ui/SectionBadge';
 
@@ -12,7 +15,19 @@ export type BazaarConfig = {
 };
 
 export function BazaarPage({ config }: { config: BazaarConfig }) {
-  const products = getProductsBySection(config.section, 40);
+  // Server renders the seed catalog; seller products (localStorage) merge
+  // in on the client so hydration always matches.
+  const [sellerExtra, setSellerExtra] = useState<Product[]>([]);
+  useEffect(() => {
+    try {
+      setSellerExtra(
+        getSellerProducts()
+          .map(sellerProductToCatalog)
+          .filter((p) => p.section === config.section)
+      );
+    } catch { /* private mode etc. — catalog still renders */ }
+  }, [config.section]);
+  const products = [...sellerExtra, ...getProductsBySection(config.section, 40)];
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
