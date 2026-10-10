@@ -17,6 +17,7 @@ type DbProduct = {
   price: number;
   mrp: number;
   discount_percent: number;
+  promote_in?: string[] | null;
   image: string | null;
   images: string[] | null;
   rating: number;
@@ -62,6 +63,7 @@ export function mapDbProduct(r: DbProduct): Product {
     createdAt: r.created_at,
     description: r.description ?? '',
     highlights: r.highlights ?? [],
+    promoteIn: r.promote_in ?? [],
   };
 }
 

@@ -323,14 +323,17 @@ export function togglePromoPlacement(productId: string, kind: PromoKind): boolea
 }
 
 /** Seller products placed into a promo, with product data resolved.
- *  Resolves demo (localStorage) products AND real DB products (which live
- *  in the primed catalog) so both can win promo placements. */
+ *  Resolves demo (localStorage) products AND real DB products. DB products
+ *  carry their placement in the promote_in column (Update 19, cross-device);
+ *  demo products still use the localStorage placements. */
 export function getPlacedProducts(kind: PromoKind): SellerProduct[] {
   const ids = new Set(getPromoPlacements().filter(pl => pl.kind === kind).map(pl => pl.productId));
-  if (ids.size === 0) return [];
   const local = getSellerProducts().filter(p => ids.has(p.id));
   const seen = new Set(local.map(p => p.id));
-  const fromDb = PRODUCTS.filter(p => ids.has(p.id) && !seen.has(p.id)).map(dbProductToSellerProduct);
+  const fromDb = PRODUCTS
+    .filter(p => !seen.has(p.id) && (ids.has(p.id) || (p.promoteIn ?? []).includes(kind)))
+    .map(dbProductToSellerProduct);
+  for (const p of fromDb) seen.add(p.id);
   return [...local, ...fromDb];
 }
 

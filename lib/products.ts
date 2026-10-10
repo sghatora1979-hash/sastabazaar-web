@@ -23,6 +23,7 @@ export type Product = {
   createdAt: string;
   description: string;
   highlights: string[];
+  promoteIn?: string[];
 };
 
 // Demo product generator — replace with API/DB later

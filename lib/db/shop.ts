@@ -76,7 +76,7 @@ export async function mergeGuestCartToDb(guest: { id: string; qty: number }[]): 
 
 // --------------------------------------------------------------- orders ---
 export type DbOrder = {
-  id: string; status: string; subtotal: number; commission: number; total: number;
+  id: string; status: string; subtotal: number; commission: number; shipping: number; total: number;
   payment_status: string; created_at: string;
   items: { product_id: string; qty: number; price: number; title: string; image: string }[];
 };
@@ -108,13 +108,14 @@ export async function getMyOrders(): Promise<DbOrder[]> {
   if (!user) return [];
   const { data, error } = await sb
     .from('orders')
-    .select('id,status,subtotal,commission,total,payment_status,created_at, order_items(product_id,qty,price, products(title,image))')
+    .select('id,status,subtotal,commission,shipping,total,payment_status,created_at, order_items(product_id,qty,price, products(title,image))')
     .eq('profile_id', user.id)
     .order('created_at', { ascending: false })
     .limit(50);
   if (error || !data) return [];
   return (data as any[]).map(o => ({
     id: o.id, status: o.status, subtotal: Number(o.subtotal), commission: Number(o.commission),
+    shipping: Number(o.shipping ?? 0),
     total: Number(o.total), payment_status: o.payment_status, created_at: o.created_at,
     items: (o.order_items ?? []).map((it: any) => ({
       product_id: it.product_id, qty: it.qty, price: Number(it.price),
@@ -143,7 +144,7 @@ export async function getMySeller(): Promise<MySeller | null> {
 /** File a seller application (status starts as 'pending'; only admins approve). */
 export async function applyAsSeller(input: {
   business_name: string; phone: string; category?: string;
-  city?: string; area?: string; pin?: string; state?: string;
+  address?: string; city?: string; area?: string; pin?: string; state?: string;
 }): Promise<{ ok: boolean; error?: string }> {
   try {
     const sb = sbOrThrow();
@@ -154,6 +155,7 @@ export async function applyAsSeller(input: {
       business_name: input.business_name,
       phone: input.phone,
       category: input.category ?? null,
+      address: input.address ?? null,
       city: input.city ?? null,
       area: input.area ?? null,
       pin: input.pin ?? null,
@@ -165,6 +167,29 @@ export async function applyAsSeller(input: {
     return { ok: true };
   } catch (e: any) {
     return { ok: false, error: e?.message ?? 'Application failed' };
+  }
+}
+
+/** Saves a delivery address for the signed-in user; returns the new id. */
+export async function saveAddressDb(input: {
+  label?: string; line1: string; city: string; pin: string; phone: string;
+}): Promise<{ ok: boolean; id?: string; error?: string }> {
+  try {
+    const sb = sbOrThrow();
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) return { ok: false, error: 'Please log in first.' };
+    const { data, error } = await sb.from('addresses').insert({
+      profile_id: user.id,
+      label: input.label ?? 'Home',
+      line1: input.line1,
+      city: input.city,
+      pin: input.pin,
+      phone: input.phone,
+    }).select('id').single();
+    if (error) return { ok: false, error: error.message };
+    return { ok: true, id: (data as any).id as string };
+  } catch (e: any) {
+    return { ok: false, error: e?.message ?? 'Could not save address' };
   }
 }
 
@@ -184,6 +209,7 @@ export type NewDbProduct = {
   price: number; mrp: number; categorySlug: string;
   image?: string; images?: string[]; stock: number;
   condition: 'new' | 'refurbished' | 'clearance';
+  promoteIn?: string[];
 };
 
 const SECTION_BY_CONDITION = { new: 'naya', refurbished: 'purana', clearance: 'clearance' } as const;
@@ -212,11 +238,28 @@ export async function createSellerProductDb(
       stock: Math.max(0, p.stock | 0),
       condition: p.condition === 'new' ? null : p.condition === 'refurbished' ? 'Good' : 'Fair',
       status: 'active',
+      promote_in: p.promoteIn ?? [],
     }).select('id').single();
     if (error) return { ok: false, error: error.message };
     return { ok: true, id: (data as any).id as string };
   } catch (e: any) {
     return { ok: false, error: e?.message ?? 'Could not add product' };
+  }
+}
+
+/** Updates a seller's promo placements (stored in the DB, cross-device). */
+export async function setProductPromosDb(
+  productId: string, promos: string[],
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const sb = sbOrThrow();
+    const { error } = await sb.from('products')
+      .update({ promote_in: promos })
+      .eq('id', productId);
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  } catch (e: any) {
+    return { ok: false, error: e?.message ?? 'Could not update promos' };
   }
 }
 
@@ -272,14 +315,16 @@ export type SellerOrderLine = {
   order_id: string; status: string; created_at: string;
   qty: number; price: number; title: string; image: string;
   customer_email: string;
+  address?: { line1: string; city: string; pin: string; phone: string } | null;
 };
 
-/** Order lines containing this seller's products (RLS restricts to own items). */
+/** Order lines containing this seller's products (RLS restricts to own items),
+ *  including the delivery address so the seller can fulfil the order. */
 export async function getMySellerOrderLines(sellerId: string): Promise<SellerOrderLine[]> {
   const sb = sbOrThrow();
   const { data, error } = await sb
     .from('order_items')
-    .select('order_id,qty,price, products(title,image), orders!inner(status,created_at)')
+    .select('order_id,qty,price, products(title,image), orders!inner(status,created_at,addresses(line1,city,pin,phone))')
     .eq('seller_id', sellerId)
     .limit(200);
   if (error || !data) return [];
@@ -288,6 +333,12 @@ export async function getMySellerOrderLines(sellerId: string): Promise<SellerOrd
     title: r.products?.title ?? 'Product', image: r.products?.image ?? '',
     status: r.orders?.status ?? 'placed', created_at: r.orders?.created_at ?? '',
     customer_email: '',
+    address: r.orders?.addresses ? {
+      line1: r.orders.addresses.line1 ?? '',
+      city: r.orders.addresses.city ?? '',
+      pin: r.orders.addresses.pin ?? '',
+      phone: r.orders.addresses.phone ?? '',
+    } : null,
   }));
   lines.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
   return lines;
