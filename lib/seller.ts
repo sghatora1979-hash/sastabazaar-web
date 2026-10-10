@@ -1,5 +1,7 @@
 'use client';
 
+import type { Product, Section } from './products';
+
 /*
  * SastaBazaar Seller / Dropship Marketplace (DEMO build)
  * -------------------------------------------------------
@@ -168,6 +170,7 @@ const K = {
   session: 'sb-seller-session',
   otp: 'sb-otp',
   seeded: 'sb-market-seeded',
+  promos: 'sb-promo-placements',
 };
 
 function read<T>(key: string, fallback: T): T {
@@ -275,6 +278,90 @@ export function addSellerProduct(p: Omit<SellerProduct, 'id' | 'createdAt'>): Se
 
 export function deleteSellerProduct(id: string) {
   write(K.products, getSellerProducts().filter(p => p.id !== id));
+  // also drop any promo placements for the deleted product
+  write(K.promos, getPromoPlacements().filter(pl => pl.productId !== id));
+}
+
+/* ------------------------- Promo placements -------------------------
+ * Sellers place their products into site-wide promos: Lucky Draw prizes,
+ * Spin & Win wheel prizes, Refer & Earn rewards, Festival picks.
+ * SastaBazaar's job: bring the customers. Commission is earned on sales
+ * (see COMMISSION_* above). Everything else is seller-powered. */
+
+export type PromoKind = 'lucky-draw' | 'spin' | 'refer' | 'festival';
+
+export const PROMO_LABELS: Record<PromoKind, { label: string; emoji: string }> = {
+  'lucky-draw': { label: 'Lucky Draw', emoji: '🎡' },
+  'spin': { label: 'Spin & Win', emoji: '🎯' },
+  'refer': { label: 'Refer Reward', emoji: '🎁' },
+  'festival': { label: 'Festival Pick', emoji: '🎪' },
+};
+
+export type PromoPlacement = {
+  productId: string;
+  kind: PromoKind;
+  createdAt: string;
+};
+
+export function getPromoPlacements(): PromoPlacement[] {
+  return read<PromoPlacement[]>(K.promos, []);
+}
+
+export function hasPromoPlacement(productId: string, kind: PromoKind): boolean {
+  return getPromoPlacements().some(pl => pl.productId === productId && pl.kind === kind);
+}
+
+export function togglePromoPlacement(productId: string, kind: PromoKind): boolean {
+  const all = getPromoPlacements();
+  const exists = all.some(pl => pl.productId === productId && pl.kind === kind);
+  const next = exists
+    ? all.filter(pl => !(pl.productId === productId && pl.kind === kind))
+    : [...all, { productId, kind, createdAt: new Date().toISOString() }];
+  write(K.promos, next);
+  return !exists;
+}
+
+/** Seller products placed into a promo, with product data resolved. */
+export function getPlacedProducts(kind: PromoKind): SellerProduct[] {
+  const ids = new Set(getPromoPlacements().filter(pl => pl.kind === kind).map(pl => pl.productId));
+  if (ids.size === 0) return [];
+  return getSellerProducts().filter(p => ids.has(p.id));
+}
+
+/* ----------------- Seller products → main catalog -----------------
+ * Lets seller products appear in the Naya / Purana / Clearance bazaars
+ * next to the seed catalog, so customers browse ONE shelf with the best
+ * deal from many shops. Client-side merge only (localStorage). */
+
+export function sellerProductToCatalog(sp: SellerProduct): Product {
+  const section: Section =
+    sp.condition === 'clearance' ? 'clearance'
+    : sp.condition === 'refurbished' ? 'purana'
+    : 'naya';
+  const images = sp.images && sp.images.length ? sp.images : [sp.image];
+  return {
+    id: sp.id,
+    slug: sp.id,
+    title: sp.title,
+    titleHi: sp.titleHi || sp.title,
+    section,
+    categoryId: sp.categorySlug,
+    subcategory: '',
+    price: sp.price,
+    mrp: sp.mrp,
+    discountPercent: sp.mrp > sp.price ? Math.round((1 - sp.price / sp.mrp) * 100) : 0,
+    image: sp.image,
+    images,
+    rating: 4.3,
+    seller: sp.sellerId,
+    sellerRating: 4.6,
+    city: 'India',
+    stock: sp.stock,
+    dealScore: 60,
+    createdAt: sp.createdAt,
+    description: sp.description,
+    highlights: [],
+  };
 }
 
 /* --------------------------------- Orders -------------------------------- */
