@@ -6,6 +6,7 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { CelebrationBlast } from '@/components/festival/CelebrationBlast';
+import { primeProductCache } from '@/lib/db/products';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' });
 const noto = Noto_Sans_Devanagari({ subsets: ['devanagari'], variable: '--font-noto', display: 'swap' });
@@ -29,7 +30,11 @@ export const viewport: Viewport = {
   maximumScale: 5
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // Phase 0: load the product catalog from Supabase (falls back to demo data
+  // if the database is unreachable). Sync components below read the primed
+  // module-level catalog, so no UI code changes are needed.
+  await primeProductCache();
   return (
     <html lang="hi" className={`${inter.variable} ${noto.variable}`}>
       <body>
