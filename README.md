@@ -45,7 +45,7 @@ npm start        # serves on port 3000
   cart, interactions, recommendations
 
 ## Going live checklist
-update 17 live
+
 - [ ] Replace `picsum.photos` demo images in `lib/products.ts` with real product photos
 - [ ] Connect a real database (Supabase/Postgres) — wire up `app/api/recommend`, `interact`, `spin`
 - [ ] Add a payment gateway (Razorpay/Stripe) in the cart checkout
