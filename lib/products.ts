@@ -271,7 +271,14 @@ export function generateProducts(): Product[] {
   return products;
 }
 
-export const PRODUCTS = generateProducts();
+export let PRODUCTS: Product[] = generateProducts();
+
+/** Phase 0: replace the in-memory catalog with rows from Supabase.
+ *  All importers see the update via the live binding; sync helpers
+ *  (getProductsBySection, searchProducts, …) keep working unchanged. */
+export function setProducts(next: Product[]): void {
+  if (Array.isArray(next) && next.length > 0) PRODUCTS = next;
+}
 
 export function getProductsBySection(section: Section, limit = 40) {
   return PRODUCTS.filter(p => p.section === section).slice(0, limit);

@@ -88,3 +88,32 @@ export async function getAllProducts(): Promise<Product[]> {
   const fromDb = await fetchProductsFromDb();
   return fromDb && fromDb.length > 0 ? fromDb : PRODUCTS;
 }
+
+// ---------------------------------------------------------------------------
+// Catalog priming: the whole site keeps using the SYNC helpers in
+// lib/products.ts. The root layout awaits primeProductCache() once, which
+// swaps the module-level PRODUCTS array to the database rows (live binding).
+// If the DB is unreachable, the demo catalog stays in place — nothing breaks.
+// ---------------------------------------------------------------------------
+import { setProducts } from '../products';
+
+const CACHE_TTL_MS = 5 * 60 * 1000; // refresh at most every 5 minutes
+let cacheAt = 0;
+let priming: Promise<void> | null = null;
+
+export function primeProductCache(): Promise<void> {
+  if (priming) return priming;
+  if (Date.now() - cacheAt < CACHE_TTL_MS) return Promise.resolve();
+  priming = (async () => {
+    try {
+      const fromDb = await fetchProductsFromDb();
+      if (fromDb && fromDb.length > 0) setProducts(fromDb);
+    } catch {
+      // keep current catalog (demo or previously loaded) on any failure
+    } finally {
+      cacheAt = Date.now(); // don't hammer the DB when it's down; retry after TTL
+      priming = null;
+    }
+  })();
+  return priming;
+}
