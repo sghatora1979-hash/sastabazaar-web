@@ -8,9 +8,33 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { MatrixRain } from '@/components/MatrixRain';
+import { RegionalRain } from '@/components/home/RegionalRain';
 import { animationsOff } from '@/lib/display';
 
-const COLORS = ['#22ff88', '#ffd23f', '#4da6ff', '#c77dff']; // green -> gold -> blue -> purple
+const COLORS = [
+  '#22ff88', // green
+  '#ffd23f', // gold
+  '#4da6ff', // blue
+  '#c77dff', // purple
+  '#ff5d5d', // red
+  '#38e1ff', // cyan
+  '#ff9f1c', // orange
+  '#ff5fd2', // pink
+];
+const WORDS = [
+  { text: 'SASTABAZAAR', spacing: 0.22 },
+  { text: 'सस्ता बाज़ार', spacing: 0.14 },
+];
+
+/** Split into grapheme clusters so Devanagari conjuncts (e.g. स्त) stay joined. */
+function splitGraphemes(s: string): string[] {
+  try {
+    const seg = new Intl.Segmenter('hi', { granularity: 'grapheme' });
+    return [...seg.segment(s)].map((x) => x.segment);
+  } catch {
+    return [...s];
+  }
+}
 const HOLD_MS = 10000;
 const DISSOLVE_MS = 1700;
 const REFORM_MS = 1500;
@@ -53,7 +77,9 @@ export function MatrixIntro() {
     let phaseStart = performance.now();
     let colorIdx = 0;
 
-    const buildParticles = () => {
+    let wordIdx = 0;
+
+    const buildParticles = (keepPositions = false) => {
       const rect = canvas.getBoundingClientRect();
       W = canvas.width = Math.max(1, Math.floor(rect.width));
       H = canvas.height = Math.max(1, Math.floor(rect.height));
@@ -62,28 +88,54 @@ export function MatrixIntro() {
       off.height = H;
       const octx = off.getContext('2d');
       if (!octx) return;
-      // Fit the word to the canvas width
-      let fontSize = Math.min(72, Math.max(28, W / 12));
-      octx.textAlign = 'center';
-      octx.textBaseline = 'middle';
-      const setFont = (s: number) => { octx.font = `900 ${s}px system-ui, -apple-system, sans-serif`; };
-      setFont(fontSize);
-      const tw = octx.measureText('SASTABAZAAR').width;
-      if (tw > W * 0.94) {
-        fontSize = Math.floor(fontSize * (W * 0.94) / tw);
-        setFont(fontSize);
+      // Fit the word to the canvas width, with wide letter spacing
+      const { text, spacing: spacingEm } = WORDS[wordIdx];
+      const chars = splitGraphemes(text);
+      let fontSize = Math.min(110, Math.max(40, W / 9));
+      const setFont = (s: number) => {
+        octx.font = `900 ${s}px system-ui, -apple-system, sans-serif`;
+      };
+      const measureWord = (s: number): { widths: number[]; total: number; spacing: number } => {
+        setFont(s);
+        octx.textAlign = 'left';
+        octx.textBaseline = 'middle';
+        const spacing = s * spacingEm;
+        const widths = chars.map((ch) => octx.measureText(ch).width);
+        const total = widths.reduce((a, b) => a + b, 0) + spacing * (chars.length - 1);
+        return { widths, total, spacing };
+      };
+      let m = measureWord(fontSize);
+      if (m.total > W * 0.94) {
+        fontSize = Math.floor(fontSize * (W * 0.94) / m.total);
+        m = measureWord(fontSize);
       }
       octx.fillStyle = '#fff';
-      octx.fillText('SASTABAZAAR', W / 2, H * 0.36);
+      let x = (W - m.total) / 2;
+      const y = H * 0.36;
+      chars.forEach((ch, i) => {
+        octx.fillText(ch, x, y);
+        x += m.widths[i] + m.spacing;
+      });
       const data = octx.getImageData(0, 0, W, H).data;
-      particles = [];
+      const homes: { x: number; y: number }[] = [];
       const gap = W < 480 ? 3 : 4;
-      for (let y = 0; y < H; y += gap) {
-        for (let x = 0; x < W; x += gap) {
-          if (data[(y * W + x) * 4 + 3] > 128) {
-            particles.push({ hx: x, hy: y, x, y, vx: 0, vy: 0, a: 1, tw: Math.random() * Math.PI * 2 });
+      for (let yy = 0; yy < H; yy += gap) {
+        for (let xx = 0; xx < W; xx += gap) {
+          if (data[(yy * W + xx) * 4 + 3] > 128) {
+            homes.push({ x: xx, y: yy });
           }
         }
+      }
+      if (keepPositions && particles.length > 0) {
+        // New word: keep particles where they are, fly them to new homes
+        particles = homes.map((h, i) => {
+          const old = particles[i % particles.length];
+          return { hx: h.x, hy: h.y, x: old.x, y: old.y, vx: 0, vy: 0, a: old.a, tw: old.tw };
+        });
+      } else {
+        particles = homes.map((h) => (
+          { hx: h.x, hy: h.y, x: h.x, y: h.y, vx: 0, vy: 0, a: 1, tw: Math.random() * Math.PI * 2 }
+        ));
       }
     };
 
@@ -125,6 +177,8 @@ export function MatrixIntro() {
         phase = 'reform';
         phaseStart = now;
         colorIdx = (colorIdx + 1) % COLORS.length;
+        wordIdx = (wordIdx + 1) % WORDS.length; // alternate English / Hindi
+        buildParticles(true);
       } else if (phase === 'reform' && t >= REFORM_MS) {
         phase = 'hold';
         phaseStart = now;
@@ -196,6 +250,7 @@ export function MatrixIntro() {
     <section className="max-w-7xl mx-auto px-3 sm:px-4 mt-4">
       <div className="relative overflow-hidden rounded-[1.75rem] bg-[#050806] text-center shadow-2xl min-h-[240px] sm:min-h-[300px]">
         {fx && <MatrixRain className="absolute inset-0 w-full h-full opacity-60" density={0.45} />}
+        {fx && <RegionalRain className="absolute inset-0 w-full h-full opacity-80" count={10} />}
         {fx && (
           <canvas
             ref={canvasRef}
