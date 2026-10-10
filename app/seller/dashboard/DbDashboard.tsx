@@ -1,10 +1,10 @@
 'use client';
 
 // Real (Supabase-backed) seller dashboard — used when the seller is logged in
-// with an APPROVED seller record. Products, stock and orders all live in the
-// database; Row-Level Security guarantees a seller only ever sees and touches
-// their own rows. Promo placements reuse the local toggle store (keyed by
-// product id) so Update 16 promo shelves keep working.
+// with an APPROVED seller record. Products, stock, orders and promo placements
+// all live in the database; Row-Level Security guarantees a seller only ever
+// sees and touches their own rows. (Update 19: promo placements moved from
+// browser localStorage to the products.promote_in column — cross-device.)
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';import { useRouter } from 'next/navigation';
 import {
@@ -14,7 +14,6 @@ import {
 import { CATEGORIES } from '@/lib/categories';
 import {
   CONDITION_LABELS, ProductCondition, PROMO_LABELS, PromoKind,
-  togglePromoPlacement, hasPromoPlacement,
 } from '@/lib/seller';
 import { BulkImport, type BulkRowProduct } from '@/components/seller/BulkImport';
 import { formatINR } from '@/lib/utils';
@@ -22,6 +21,7 @@ import type { Product } from '@/lib/products';
 import {
   getMySellerProducts, createSellerProductDb, deleteSellerProductDb,
   getMySellerOrderLines, setOrderStatusDb, uploadProductImage,
+  setProductPromosDb,
   type MySeller, type SellerOrderLine, type NewDbProduct,
 } from '@/lib/db/shop';
 
@@ -107,9 +107,9 @@ export function DbDashboard({ seller, onLogout }: { seller: MySeller; onLogout: 
         ...input,
         image: urls[0] || input.image,
         images: urls.length ? urls : (input.images ?? []),
+        promoteIn: promos,
       });
       if (!res.ok) { setFormError(res.error ?? 'Could not add product.'); return; }
-      promos.forEach(k => togglePromoPlacement(res.id!, k));
       setPromoTick(t => t + 1);
       resetForm();
       reload();
@@ -124,6 +124,7 @@ export function DbDashboard({ seller, onLogout }: { seller: MySeller; onLogout: 
       title: p.title, titleHi: p.titleHi, description: p.description,
       price: p.price, mrp: p.mrp, categorySlug: p.categorySlug,
       image: urls[0], images: urls, stock: p.stock, condition: p.condition,
+      promoteIn: p.promos,
     });
     return res;
   };
@@ -135,8 +136,17 @@ export function DbDashboard({ seller, onLogout }: { seller: MySeller; onLogout: 
     else alert(res.error ?? 'Could not remove product.');
   };
 
-  const togglePromo = (id: string, kind: PromoKind) => {
-    togglePromoPlacement(id, kind);
+  const togglePromo = async (id: string, kind: PromoKind) => {
+    const prod = products.find(p => p.id === id);
+    const cur = prod?.promoteIn ?? [];
+    const next = cur.includes(kind) ? cur.filter(k => k !== kind) : [...cur, kind];
+    // optimistic UI
+    setProducts(ps => ps.map(p => p.id === id ? { ...p, promoteIn: next } : p));
+    const res = await setProductPromosDb(id, next);
+    if (!res.ok) {
+      setProducts(ps => ps.map(p => p.id === id ? { ...p, promoteIn: cur } : p));
+      alert(res.error ?? 'Could not update promos.');
+    }
     setPromoTick(t => t + 1);
   };
 
@@ -302,7 +312,7 @@ export function DbDashboard({ seller, onLogout }: { seller: MySeller; onLogout: 
                       </div>
                       <div className="flex flex-wrap gap-1.5 mt-2">
                         {PROMO_KINDS.map(k => {
-                          const on = hasPromoPlacement(p.id, k);
+                          const on = (p.promoteIn ?? []).includes(k);
                           return (
                             <button key={k} onClick={() => togglePromo(p.id, k)}
                               className={`text-[10px] font-bold px-2 py-1 rounded-full border ${on ? 'border-purple-500 bg-purple-600 text-white' : 'border-gray-200 text-gray-400'}`}>
@@ -345,6 +355,13 @@ export function DbDashboard({ seller, onLogout }: { seller: MySeller; onLogout: 
                     </div>
                   ))}
                 </div>
+                {g.lines[0]?.address && (
+                  <div className="mt-2 text-xs bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 text-gray-700">
+                    <span className="font-bold">Deliver to:</span>{' '}
+                    {g.lines[0].address!.line1}, {g.lines[0].address!.city} — {g.lines[0].address!.pin}
+                    {g.lines[0].address!.phone ? ` · 📞 ${g.lines[0].address!.phone}` : ''}
+                  </div>
+                )}
                 <div className="mt-3 flex items-center gap-2">
                   <Truck size={15} className="text-gray-400" />
                   <input value={tracking[orderId] || ''} onChange={e => setTracking({ ...tracking, [orderId]: e.target.value })}

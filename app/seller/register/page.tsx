@@ -41,6 +41,10 @@ export default function SellerRegister() {
   const [code, setCode] = useState('');
   const [shopName, setShopName] = useState('');
   const [state, setState] = useState('UP');
+  const [address, setAddress] = useState('');
+  const [area, setArea] = useState('');
+  const [city, setCity] = useState('');
+  const [pin, setPin] = useState('');
   const [photo, setPhoto] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -86,12 +90,19 @@ export default function SellerRegister() {
   const finish = () => {
     setError('');
     if (shopName.trim().length < 2) { setError('Please enter your shop name.'); return; }
+    if (address.trim().length < 5) { setError('Please enter your shop address.'); return; }
+    if (city.trim().length < 2) { setError('Please enter your city.'); return; }
+    if (!/^\d{6}$/.test(pin.trim())) { setError('Please enter a valid 6-digit PIN code.'); return; }
     if (realMode) {
       // Real application -> Supabase sellers table (status 'pending', admin approves).
       setBusy(true);
       applyAsSeller({
         business_name: shopName.trim(),
         phone: phone.trim() || user?.email || '',
+        address: address.trim(),
+        area: area.trim() || undefined,
+        city: city.trim(),
+        pin: pin.trim(),
         state,
       }).then(r => {
         setBusy(false);
@@ -190,15 +201,40 @@ export default function SellerRegister() {
               </div>
             </label>
             <label className="block">
-              <span className="text-sm font-semibold text-gray-700">Your state (customers can shop state-wise)</span>
+              <span className="text-sm font-semibold text-gray-700">Shop address (street / shop no.)</span>
               <div className="relative mt-1">
-                <MapPin size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <select value={state} onChange={e => setState(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-gray-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40">
-                  {STATES.map(st => <option key={st.code} value={st.code}>{st.name} — {st.languages.join(', ')}</option>)}
-                </select>
+                <MapPin size={18} className="absolute left-3 top-3.5 text-gray-400" />
+                <textarea value={address} onChange={e => setAddress(e.target.value)} placeholder="e.g. Shop 12, Main Market, MG Road"
+                  rows={2}
+                  className="w-full pl-10 pr-4 py-3 bg-gray-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40" />
               </div>
             </label>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="block">
+                <span className="text-sm font-semibold text-gray-700">Area</span>
+                <input value={area} onChange={e => setArea(e.target.value)} placeholder="e.g. Sector 12"
+                  className="mt-1 w-full px-4 py-3 bg-gray-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40" />
+              </label>
+              <label className="block">
+                <span className="text-sm font-semibold text-gray-700">City</span>
+                <input value={city} onChange={e => setCity(e.target.value)} placeholder="e.g. Ludhiana"
+                  className="mt-1 w-full px-4 py-3 bg-gray-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40" />
+              </label>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="block">
+                <span className="text-sm font-semibold text-gray-700">PIN code</span>
+                <input value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="141001" inputMode="numeric"
+                  className="mt-1 w-full px-4 py-3 bg-gray-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40" />
+              </label>
+              <label className="block">
+                <span className="text-sm font-semibold text-gray-700">State</span>
+                <select value={state} onChange={e => setState(e.target.value)}
+                  className="mt-1 w-full px-4 py-3 bg-gray-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40">
+                  {STATES.map(st => <option key={st.code} value={st.code}>{st.name}</option>)}
+                </select>
+              </label>
+            </div>
             <div>
               <span className="text-sm font-semibold text-gray-700">Shop photo <span className="font-normal text-gray-400">(optional)</span></span>
               <button onClick={() => fileRef.current?.click()}

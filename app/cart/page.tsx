@@ -14,7 +14,7 @@ import {
 } from '@/lib/seller';
 import { notifyNewOrder } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
-import { getDbCart, setDbCartQty, placeDbOrder } from '@/lib/db/shop';
+import { getDbCart, setDbCartQty, placeDbOrder, saveAddressDb } from '@/lib/db/shop';
 
 type Row = {
   id: string; title: string; titleHi?: string; price: number; mrp: number; image: string; href: string;
@@ -47,6 +47,8 @@ export default function CartPage() {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
+  const [city, setCity] = useState('');
+  const [pin, setPin] = useState('');
   const [formError, setFormError] = useState('');
 
   const [method, setMethod] = useState<PaymentMethod>('upi');
@@ -125,26 +127,46 @@ export default function CartPage() {
     if (name.trim().length < 2) { setFormError('Please enter your name.'); return; }
     if (phone.trim().replace(/\D/g, '').length < 10) { setFormError('Please enter a valid phone number.'); return; }
     if (address.trim().length < 10) { setFormError('Please enter your full delivery address.'); return; }
+    if (city.trim().length < 2) { setFormError('Please enter your city.'); return; }
+    if (!/^\d{6}$/.test(pin.trim())) { setFormError('Please enter a valid 6-digit PIN code.'); return; }
     setStep('payment');
   };
 
-  /** Real order path (logged in): server-verified prices, live stock check,
-   *  payment stays 'pending' — online payment integration comes separately. */
+  /** Real order path (logged in): the delivery address is saved to the DB first,
+   *  then the order is placed with server-verified prices, live stock check and
+   *  server-side shipping. Payment stays 'pending' — online payment comes separately. */
   const placeRealOrder = () => {
     setFormError('');
     if (name.trim().length < 2) { setFormError('Please enter your name.'); return; }
     if (phone.trim().replace(/\D/g, '').length < 10) { setFormError('Please enter a valid phone number.'); return; }
     if (address.trim().length < 10) { setFormError('Please enter your full delivery address.'); return; }
+    if (city.trim().length < 2) { setFormError('Please enter your city.'); return; }
+    if (!/^\d{6}$/.test(pin.trim())) { setFormError('Please enter a valid 6-digit PIN code.'); return; }
     setPaying(true);
     const key = `web-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-    placeDbOrder(rows.map(r => ({ product_id: r.id, qty: r.qty })), null, key).then(res => {
-      setPaying(false);
-      if (res.ok && res.orderId) {
-        setPlacedDb({ id: res.orderId, total });
-        setRows([]);
-      } else {
-        setFormError(res.error ?? 'Order failed. Please try again.');
+    const items = rows.map(r => ({ product_id: r.id, qty: r.qty }));
+    // Save the delivery address first so the seller can fulfil the order.
+    saveAddressDb({
+      label: 'Home', line1: `${name.trim()} — ${address.trim()}`,
+      city: city.trim(), pin: pin.trim(), phone: phone.trim(),
+    }).then(addr => {
+      if (!addr.ok || !addr.id) {
+        setPaying(false);
+        setFormError(addr.error ?? 'Could not save address. Please try again.');
+        return;
       }
+      return placeDbOrder(items, addr.id, key).then(res => {
+        setPaying(false);
+        if (res.ok && res.orderId) {
+          setPlacedDb({ id: res.orderId, total });
+          setRows([]);
+        } else {
+          setFormError(res.error ?? 'Order failed. Please try again.');
+        }
+      });
+    }).catch(() => {
+      setPaying(false);
+      setFormError('Order failed. Please try again.');
     });
   };
 
@@ -320,8 +342,14 @@ export default function CartPage() {
                 className="w-full px-4 py-3 bg-gray-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40" />
               <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="Phone number" inputMode="tel"
                 className="w-full px-4 py-3 bg-gray-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40" />
-              <textarea value={address} onChange={e => setAddress(e.target.value)} placeholder="Full address with PIN code" rows={3}
+              <textarea value={address} onChange={e => setAddress(e.target.value)} placeholder="Full street address" rows={3}
                 className="w-full px-4 py-3 bg-gray-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40" />
+              <div className="grid grid-cols-2 gap-3">
+                <input value={city} onChange={e => setCity(e.target.value)} placeholder="City"
+                  className="w-full px-4 py-3 bg-gray-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40" />
+                <input value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="PIN code" inputMode="numeric"
+                  className="w-full px-4 py-3 bg-gray-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40" />
+              </div>
               {formError && <p className="text-sm text-red-600">{formError}</p>}
               <div className="flex gap-3">
                 <button onClick={() => setStep('cart')} className="font-bold px-6 py-3 rounded-2xl border border-gray-300 text-sm">Back</button>
@@ -339,7 +367,7 @@ export default function CartPage() {
                 server-verified prices. Payment is collected on delivery — online payments are coming soon.
               </div>
               <div className="text-sm text-gray-600 mb-4">
-                Deliver to: <b>{name}</b>, {phone}<br />{address}
+                Deliver to: <b>{name}</b>, {phone}<br />{address}, {city} — {pin}
               </div>
               {formError && <p className="text-sm text-red-600 mb-3">{formError}</p>}
               <div className="flex gap-3">

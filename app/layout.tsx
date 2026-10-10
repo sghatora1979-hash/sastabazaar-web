@@ -8,6 +8,7 @@ import { BottomNav } from '@/components/layout/BottomNav';
 import { CelebrationBlast } from '@/components/festival/CelebrationBlast';
 import { primeProductCache } from '@/lib/db/products';
 import { AuthProvider } from '@/lib/auth';
+import { MatrixBackdrop } from '@/components/ui/MatrixBackdrop';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' });
 const noto = Noto_Sans_Devanagari({ subsets: ['devanagari'], variable: '--font-noto', display: 'swap' });
@@ -39,6 +40,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="hi" className={`${inter.variable} ${noto.variable}`}>
       <body>
+        {/* Update 18: full-site matrix rain, fixed behind everything (z-0). */}
+        <MatrixBackdrop />
+        <div className="relative z-[1]">
         <ThemeProvider>
           <AuthProvider>
           <Header />
@@ -48,6 +52,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <CelebrationBlast />
           </AuthProvider>
         </ThemeProvider>
+        </div>
       </body>
     </html>
   );
