@@ -1,6 +1,7 @@
 'use client';
 
 import type { Product, Section } from './products';
+import { PRODUCTS } from './products';
 
 /*
  * SastaBazaar Seller / Dropship Marketplace (DEMO build)
@@ -321,11 +322,28 @@ export function togglePromoPlacement(productId: string, kind: PromoKind): boolea
   return !exists;
 }
 
-/** Seller products placed into a promo, with product data resolved. */
+/** Seller products placed into a promo, with product data resolved.
+ *  Resolves demo (localStorage) products AND real DB products (which live
+ *  in the primed catalog) so both can win promo placements. */
 export function getPlacedProducts(kind: PromoKind): SellerProduct[] {
   const ids = new Set(getPromoPlacements().filter(pl => pl.kind === kind).map(pl => pl.productId));
   if (ids.size === 0) return [];
-  return getSellerProducts().filter(p => ids.has(p.id));
+  const local = getSellerProducts().filter(p => ids.has(p.id));
+  const seen = new Set(local.map(p => p.id));
+  const fromDb = PRODUCTS.filter(p => ids.has(p.id) && !seen.has(p.id)).map(dbProductToSellerProduct);
+  return [...local, ...fromDb];
+}
+
+/** Map a catalog/DB product to the seller-product shape for promo shelves. */
+function dbProductToSellerProduct(p: Product): SellerProduct {
+  const condition: ProductCondition =
+    p.section === 'purana' ? 'refurbished' : p.section === 'clearance' ? 'clearance' : 'new';
+  return {
+    id: p.id, sellerId: 'db', title: p.title, titleHi: p.titleHi,
+    price: p.price, mrp: p.mrp, categorySlug: '', image: p.image, images: p.images,
+    sizes: [], description: p.description, stock: p.stock, condition,
+    createdAt: p.createdAt,
+  };
 }
 
 /* ----------------- Seller products → main catalog -----------------
