@@ -1,0 +1,1 @@
+{"crons":[{"path":"/api/ai-manager/run","schedule":"30 20 * * *"}]}
