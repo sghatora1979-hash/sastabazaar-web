@@ -65,7 +65,7 @@ export default function SellerHub() {
             <Timer size={16} /> Start selling in 2 minutes
           </div>
           <h1 className="text-4xl font-black text-gray-900 mt-4 leading-tight">
-            Sell on Sastabazaar.<br /><span className="text-[var(--primary)]">No paperwork to start.</span>
+            Sell on SastaBazaar.<br /><span className="text-[var(--primary)]">No paperwork to start.</span>
           </h1>
           <p className="text-gray-600 mt-4">
             Just your phone number and shop name — list products in the morning, get orders on your phone,

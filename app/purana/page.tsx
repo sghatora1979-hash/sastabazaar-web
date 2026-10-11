@@ -1,7 +1,7 @@
 import { BazaarPage } from '@/components/home/BazaarPage';
 
 export const metadata = {
-  title: 'Purana Bazaar — Quality Second-hand | Sastabazaar',
+  title: 'Purana Bazaar — Quality Second-hand | SastaBazaar',
   description: 'Quality-checked pre-owned items at unbeatable prices.'
 };
 

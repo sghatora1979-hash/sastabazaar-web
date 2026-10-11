@@ -75,7 +75,7 @@ export default function CartPage() {
       if (p) {
         resolved.push({
           id: p.id, title: p.title, titleHi: p.titleHi, price: p.price, mrp: p.mrp, image: p.image,
-          href: `/product/${p.slug}`, sellerId: 'platform', sellerName: 'Sastabazaar', qty: i.qty, condition: 'new',
+          href: `/product/${p.slug}`, sellerId: 'platform', sellerName: 'SastaBazaar', qty: i.qty, condition: 'new',
         });
         continue;
       }

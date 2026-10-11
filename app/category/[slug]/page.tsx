@@ -7,7 +7,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   const cat = getCategoryBySlug(params.slug);
   if (!cat) return { title: 'Category not found' };
   return {
-    title: `${cat.name} | Sastabazaar`,
+    title: `${cat.name} | SastaBazaar`,
     description: `Shop ${cat.name} across Naya, Purana, Clearance and Local bazaars.`
   };
 }

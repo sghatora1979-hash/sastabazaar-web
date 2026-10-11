@@ -1,7 +1,7 @@
 import { BazaarPage } from '@/components/home/BazaarPage';
 
 export const metadata = {
-  title: 'Local Bazaar — Pickup in Your City | Sastabazaar',
+  title: 'Local Bazaar — Pickup in Your City | SastaBazaar',
   description: 'Meet sellers in your city, inspect in person and skip shipping.'
 };
 

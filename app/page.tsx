@@ -11,6 +11,7 @@ import { BudgetPicks } from '@/components/store/BudgetPicks';
 import { RefCapture } from '@/components/refer/RefCapture';
 import { CategoryGrid } from '@/components/home/CategoryGrid';
 import { FestivalPromo } from '@/components/festival/FestivalPromo';
+import { PopularInRegion } from '@/components/ai-manager/PopularInRegion';
 import { getNextFestival } from '@/lib/festivals';
 
 export default function HomePage() {
@@ -26,6 +27,7 @@ export default function HomePage() {
       <RefCapture />
       <FlashDeals />
       <BudgetPicks />
+      <PopularInRegion />
       <BazaarSelector />
       <PersonalizedFeed />
       <CategoryGrid />

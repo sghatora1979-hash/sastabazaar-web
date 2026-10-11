@@ -1,7 +1,7 @@
 import { BazaarPage } from '@/components/home/BazaarPage';
 
 export const metadata = {
-  title: 'Naya Bazaar — Brand New Products | Sastabazaar',
+  title: 'Naya Bazaar — Brand New Products | SastaBazaar',
   description: 'Brand new products from verified sellers at the best prices.'
 };
 

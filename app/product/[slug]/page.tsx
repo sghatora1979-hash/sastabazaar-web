@@ -8,7 +8,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   const p = getProductBySlug(params.slug);
   if (!p) return { title: 'Product not found' };
   return {
-    title: `${p.title} | Sastabazaar`,
+    title: `${p.title} | SastaBazaar`,
     description: p.description
   };
 }

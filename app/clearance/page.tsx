@@ -1,7 +1,7 @@
 import { BazaarPage } from '@/components/home/BazaarPage';
 
 export const metadata = {
-  title: 'Clearance Bazaar — Up to 80% OFF | Sastabazaar',
+  title: 'Clearance Bazaar — Up to 80% OFF | SastaBazaar',
   description: 'End-of-season stock clearance. Up to 80% off, while stock lasts.'
 };
 
