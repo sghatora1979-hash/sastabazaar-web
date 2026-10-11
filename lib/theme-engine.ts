@@ -25,3 +25,9 @@ export function getTomorrowTheme(date = new Date()): Theme {
   tomorrow.setDate(tomorrow.getDate() + 1);
   return DAILY_THEMES[tomorrow.getDay()];
 }
+
+// Update 20 fix: HOURLY rotation, as requested — the 7 high-contrast colour
+// themes cycle every hour (hour % 7), so all seven appear through the day.
+export function getHourTheme(date = new Date()): Theme {
+  return DAILY_THEMES[date.getHours() % 7];
+}
