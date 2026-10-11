@@ -1,9 +1,14 @@
 'use client';
 /**
- * MatrixBackdrop — Update 18.
+ * MatrixBackdrop — Updates 18–20.
  * A fixed, full-website matrix rain rendered BEHIND all page content.
  * Falling glyphs from many Indian scripts, very faint so text stays readable.
- * The rain colour rotates through a palette every 5 minutes.
+ * Update 20: the rain colour rotates through all 7 colours once per HOUR
+ * (was every 5 minutes), with smooth blending between hours.
+ * Update 20: glyphs brighten near the finger/pointer (pointer-reactive glow).
+ * Update 20: crisper rendering on high-DPI screens (devicePixelRatio up to 3).
+ * Update 22: glyphs made DARKER / more visible (~2.5x alpha) per Sandeep's
+ * request — clearly visible on the cream background, content still paints above.
  * Purely decorative: pointer-events none, sits at z-0, never touches app logic.
  * Disabled when animations are off / reduced motion / lightweight mode.
  */
@@ -22,10 +27,19 @@ const GLYPHS =
   'અઆઇઈઉઊએઐઓઔકખગઘચછજઝટઠડઢતથદધનપફબભમયરલવશષસહ' +
   'ଅଆଇଈଉଊଏଐଓଔକଖଗଘଚଛଜଝଟଠଡଢତଥଦଧନପଫବଭମଯରଲଵଶଷସହ';
 
-// Palette the rain colour rotates through every 5 minutes.
+// Update 20: 7 colours, one per hour — the colour pattern changes every hour.
+// Update 18 had a 5-minute rotation; his 2026-10-10 request asked for hourly.
 const PALETTE = ['#16a34a', '#d4a017', '#2563eb', '#9333ea', '#0891b2', '#ea580c', '#db2777'];
-const ROTATE_MS = 5 * 60 * 1000;
+const ROTATE_MS = 60 * 60 * 1000;
 const FADE_MS = 3000; // smooth blend between colours
+
+// Update 20: pointer-reactive glow radius (px) and max extra brightness.
+// Update 22: base alphas raised ~2.5x (head 0.28→0.66, trail 0.16→0.38) so the
+// rain is clearly visible on cream; boost trimmed so the glow stays tasteful.
+const GLOW_RADIUS = 140;
+const GLOW_BOOST = 0.25;
+const HEAD_ALPHA = 0.66;
+const TRAIL_ALPHA = 0.38;
 
 function hexToRgb(hex: string): [number, number, number] {
   const h = hex.replace('#', '');
@@ -60,6 +74,20 @@ export function MatrixBackdrop() {
     let fromRgb = hexToRgb(PALETTE[colorIdx]);
     let toRgb = fromRgb;
 
+    // Update 20: track the finger/pointer so nearby glyphs brighten as it moves.
+    let px = -9999;
+    let py = -9999;
+    const onPointerMove = (e: PointerEvent) => {
+      px = e.clientX;
+      py = e.clientY;
+    };
+    const onPointerLeave = () => {
+      px = -9999;
+      py = -9999;
+    };
+    window.addEventListener('pointermove', onPointerMove, { passive: true });
+    document.documentElement.addEventListener('pointerleave', onPointerLeave);
+
     const pick = () => GLYPHS[Math.floor(Math.random() * GLYPHS.length)];
 
     const makeColumn = (initial: boolean): Column => {
@@ -74,7 +102,9 @@ export function MatrixBackdrop() {
     };
 
     const resize = () => {
-      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      // Update 20: render up to devicePixelRatio 3 for crisper glyphs on
+      // high-DPI screens (sharper look; not a resolution claim about video).
+      const dpr = Math.min(3, window.devicePixelRatio || 1);
       w = window.innerWidth;
       h = window.innerHeight;
       canvas.width = Math.floor(w * dpr);
@@ -97,7 +127,7 @@ export function MatrixBackdrop() {
       const dt = Math.min(0.1, (now - last) / 1000);
       last = now;
 
-      // rotate colour every 5 minutes, blending smoothly
+      // rotate colour every hour, blending smoothly
       const idx = Math.floor(now / ROTATE_MS) % PALETTE.length;
       if (idx !== colorIdx) {
         fromRgb = currentRgb(now);
@@ -122,9 +152,16 @@ export function MatrixBackdrop() {
           const yy = c.y - i * 22;
           if (yy < -24 || yy > h + 24) continue;
           const head = i === 0;
-          // faint overall so page text stays readable; head slightly brighter
-          const alpha = head ? 0.28 : 0.16 * (1 - i / c.len);
-          ctx.fillStyle = `rgba(${r},${g},${b},${alpha.toFixed(3)})`;
+          // Update 22: darker, clearly visible on cream; head brightest.
+          let alpha = head ? HEAD_ALPHA : TRAIL_ALPHA * (1 - i / c.len);
+          // Update 20: finger/pointer glow — glyphs near the pointer brighten.
+          const dx = c.x - px;
+          const dy = yy - py;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < GLOW_RADIUS) {
+            alpha += GLOW_BOOST * (1 - dist / GLOW_RADIUS);
+          }
+          ctx.fillStyle = `rgba(${r},${g},${b},${Math.min(0.85, alpha).toFixed(3)})`;
           ctx.fillText(c.chars[i], c.x, yy);
         }
       }
@@ -144,6 +181,8 @@ export function MatrixBackdrop() {
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener('resize', resize);
+      window.removeEventListener('pointermove', onPointerMove);
+      document.documentElement.removeEventListener('pointerleave', onPointerLeave);
     };
   }, []);
 

@@ -30,7 +30,7 @@ export function ShippingPolicy() {
 export function TermsPage() {
   return (
     <Policy title="Terms of Service">
-      <p>By using Sastabazaar you agree to shop fairly: accurate account details, no fraudulent payments, and no abuse of coupons or the Spin &amp; Win wheel.</p>
+      <p>By using SastaBazaar you agree to shop fairly: accurate account details, no fraudulent payments, and no abuse of coupons or the Spin &amp; Win wheel.</p>
       <p>All payments on Naya, Purana and Clearance bazaars are held in <strong>escrow</strong> and released to the seller only after you confirm delivery (or after 7 days, whichever is earlier).</p>
       <p>Product images on this demo site are placeholders. Sellers are responsible for the accuracy of their listings.</p>
     </Policy>

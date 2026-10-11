@@ -1,6 +1,6 @@
 'use client';
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { getTodayTheme, DAILY_THEMES, Theme } from '@/lib/theme-engine';
+import { getHourTheme, DAILY_THEMES, Theme } from '@/lib/theme-engine';
 
 type Ctx = {
   theme: Theme;
@@ -11,7 +11,7 @@ type Ctx = {
 const ThemeContext = createContext<Ctx>(null!);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(getTodayTheme());
+  const [theme, setTheme] = useState<Theme>(getHourTheme());
   const [override, setOverrideState] = useState<string | null>(null);
 
   useEffect(() => {
@@ -32,14 +32,19 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     root.style.setProperty('--shadow-color', `rgba(${active.primaryRgb}, 0.3)`);
   }, [theme, override]);
 
-  // Rotate at midnight
+  // Update 20 fix: rotate the theme every hour (was: at midnight).
+  // Fires once at the top of the next hour, then every hour after.
   useEffect(() => {
+    let iv: ReturnType<typeof setInterval> | undefined;
     const now = new Date();
-    const midnight = new Date(now);
-    midnight.setHours(24, 0, 0, 0);
-    const ms = midnight.getTime() - now.getTime();
-    const t = setTimeout(() => setTheme(getTodayTheme()), ms);
-    return () => clearTimeout(t);
+    const nextHour = new Date(now);
+    nextHour.setMinutes(60, 0, 0);
+    const ms = Math.max(nextHour.getTime() - now.getTime(), 0);
+    const t = setTimeout(() => {
+      setTheme(getHourTheme());
+      iv = setInterval(() => setTheme(getHourTheme()), 3600000);
+    }, ms);
+    return () => { clearTimeout(t); if (iv) clearInterval(iv); };
   }, []);
 
   const setOverride = (name: string | null) => {

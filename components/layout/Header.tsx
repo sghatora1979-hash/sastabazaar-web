@@ -77,7 +77,7 @@ export function Header() {
             <Menu size={22} />
           </button>
 
-          <Link href="/" className="flex items-center gap-2 shrink-0" aria-label="Sastabazaar home">
+          <Link href="/" className="flex items-center gap-2 shrink-0" aria-label="SastaBazaar home">
             <div
               className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-black text-lg shadow-md"
               style={{ background: `linear-gradient(135deg, ${BRAND}, #E05E00)` }}
@@ -86,7 +86,7 @@ export function Header() {
             </div>
             <div className="hidden md:block">
               <div className="font-extrabold text-[17px] leading-none text-gray-900 tracking-tight">
-                Sasta<span style={{ color: BRAND }}>bazaar</span>
+                Sasta<span style={{ color: BRAND }}>Bazaar</span>
               </div>
               <div className="text-[10px] text-gray-500 leading-tight">सस्ते सामान का बाज़ार</div>
             </div>
@@ -154,6 +154,16 @@ export function Header() {
 
           {/* Actions */}
           <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
+            {/* Update 21: Bikers & Home Delivery nav (desktop) */}
+            <Link href="/delivery" className="hidden md:flex flex-col items-center px-2 py-1 text-gray-700 hover:text-gray-900" aria-label="Bikers and Home Delivery">
+              <span className="text-[20px] leading-none">🚴</span>
+              <span className="text-[10px] font-semibold">Delivery</span>
+            </Link>
+            {/* Update 22: International Sellers nav (desktop) */}
+            <Link href="/international" className="hidden md:flex flex-col items-center px-2 py-1 text-gray-700 hover:text-gray-900" aria-label="International Sellers">
+              <span className="text-[20px] leading-none">🌍</span>
+              <span className="text-[10px] font-semibold">Global</span>
+            </Link>
             <Link href="/account" className="hidden sm:flex flex-col items-center px-2 py-1 text-gray-700 hover:text-gray-900" aria-label="Account">
               <User size={22} />
               <span className="text-[10px] font-semibold">Account</span>
@@ -209,8 +219,14 @@ export function Header() {
                 <Link href="/festivals" onClick={() => setMenuOpen(false)} className="block px-3 py-2 rounded-lg hover:bg-gray-100 font-bold">🪔 Festivals</Link>
                 <Link href="/marketplace" onClick={() => setMenuOpen(false)} className="block px-3 py-2 rounded-lg hover:bg-gray-100">🏪 Marketplace</Link>
                 <Link href="/track" onClick={() => setMenuOpen(false)} className="block px-3 py-2 rounded-lg hover:bg-gray-100">📦 Track Order</Link>
+                {/* Update 21: Bikers & Home Delivery */}
+                <Link href="/delivery" onClick={() => setMenuOpen(false)} className="block px-3 py-2 rounded-lg hover:bg-gray-100 font-bold">🚴 Bikers & Home Delivery</Link>
+                <Link href="/biker/register" onClick={() => setMenuOpen(false)} className="block px-3 py-2 rounded-lg hover:bg-gray-100">🛵 Become a Delivery Partner</Link>
+                {/* Update 22: International Sellers */}
+                <Link href="/international" onClick={() => setMenuOpen(false)} className="block px-3 py-2 rounded-lg hover:bg-gray-100 font-bold">🌍 International Sellers</Link>
+                <Link href="/supplier/register" onClick={() => setMenuOpen(false)} className="block px-3 py-2 rounded-lg hover:bg-gray-100">🏭 Become an International Supplier</Link>
                 <Link href="/contact" onClick={() => setMenuOpen(false)} className="block px-3 py-2 rounded-lg hover:bg-gray-100">Contact Us</Link>
-                <Link href="/seller" onClick={() => setMenuOpen(false)} className="block px-3 py-2 rounded-lg font-bold text-white" style={{ background: BRAND }}>Sell on Sastabazaar</Link>
+                <Link href="/seller" onClick={() => setMenuOpen(false)} className="block px-3 py-2 rounded-lg font-bold text-white" style={{ background: BRAND }}>Sell on SastaBazaar</Link>
                 <div className="border-t my-2" />
                 <div className="text-xs font-bold text-gray-500 uppercase px-3 py-1">Categories</div>
                 {CATEGORIES.map(c => (

@@ -11,6 +11,7 @@ import { trackView } from '@/lib/interactions';
 import { recordView } from '@/lib/recent';
 import { addToCart } from '@/lib/cart';
 import { ShareButtons } from '@/components/ui/ShareButtons';
+import { CampaignPriceTag } from '@/components/ai-manager/CampaignPriceTag';
 import { Star, MapPin, ShieldCheck, Truck, RotateCcw, Store, Check } from 'lucide-react';
 
 export function ProductDetail({ product, categorySlug }: { product: Product; categorySlug?: string }) {
@@ -113,6 +114,8 @@ export function ProductDetail({ product, categorySlug }: { product: Product; cat
             </>
           )}
         </div>
+        {/* AI campaign price (Update 24) — renders only when a seller-approved campaign is active */}
+        <CampaignPriceTag productId={product.id} />
 
         <p className="text-sm text-gray-600 mt-4 leading-relaxed">{product.description}</p>
 

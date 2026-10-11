@@ -8,7 +8,7 @@ export function Footer() {
         <div className="col-span-2 md:col-span-1">
           <div className="flex items-center gap-2 mb-3">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--primary)] to-[var(--accent)] flex items-center justify-center text-white font-black">S</div>
-            <span className="text-white font-bold text-lg">Sastabazaar</span>
+            <span className="text-white font-bold text-lg">SastaBazaar</span>
           </div>
           <p className="text-sm text-gray-400">
             सस्ते सामान का बाज़ार. India&apos;s smartest 4-in-1 marketplace — Naya, Purana, Clearance, aur Local.
@@ -61,7 +61,7 @@ export function Footer() {
 
       <div className="border-t border-gray-800">
         <div className="max-w-7xl mx-auto px-4 py-4 text-xs text-gray-500 flex flex-col sm:flex-row justify-between gap-2">
-          <span>© {new Date().getFullYear()} Sastabazaar · Head Office: Bangalore, India</span>
+          <span>© {new Date().getFullYear()} SastaBazaar · Head Office: Bangalore, India</span>
           <span>UPI · COD · Card · Escrow Protected</span>
         </div>
       </div>
