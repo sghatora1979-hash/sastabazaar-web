@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Product } from '@/lib/products';
+import { trustConditionLabel } from '@/lib/products';
 import { SectionBadge } from '@/components/ui/SectionBadge';
 import { LikeDislike } from '@/components/ui/LikeDislike';
 import { formatINR } from '@/lib/utils';
@@ -98,10 +99,25 @@ export function ProductDetail({ product, categorySlug }: { product: Product; cat
           </span>
           {product.condition && (
             <span className="bg-blue-50 text-blue-700 font-semibold px-2.5 py-1 rounded-full text-xs">
-              {product.condition}
+              {trustConditionLabel(product.condition)}
+            </span>
+          )}
+          {product.stockAge && (
+            <span className="bg-purple-50 text-purple-700 font-semibold px-2.5 py-1 rounded-full text-xs">
+              📅 Stock: {product.stockAge}
             </span>
           )}
         </div>
+
+        {product.sellerGuarantee && (
+          <div className="mt-3 flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-2xl px-3.5 py-2.5">
+            <ShieldCheck size={18} className="text-amber-600 shrink-0 mt-0.5" />
+            <p className="text-sm text-gray-700">
+              <span className="font-bold text-amber-800">Seller ki guarantee: </span>
+              “{product.sellerGuarantee}”
+            </p>
+          </div>
+        )}
 
         <div className="flex items-baseline gap-3 mt-5">
           <span className="text-4xl font-black text-[var(--primary)]">{formatINR(product.price)}</span>
