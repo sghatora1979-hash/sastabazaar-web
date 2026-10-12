@@ -96,9 +96,79 @@ export async function placeDbOrder(
       p_idempotency_key: idempotencyKey,
     });
     if (error) return { ok: false, error: error.message };
-    return { ok: true, orderId: data as string };
+    const orderId = data as string;
+    // --- MARKETPLACE AUTOMATION HOOK (Option A, 2026-10-12) ---
+    // Right after the order is placed, record per-seller commission rows in
+    // sb_commission_ledger (status 'pending'). Best-effort: a ledger failure
+    // must NEVER fail the customer's order.
+    recordCommissionLedger(orderId).catch(() => {});
+    return { ok: true, orderId };
   } catch (e: any) {
     return { ok: false, error: e?.message ?? 'Order failed' };
+  }
+}
+
+/**
+ * MARKETPLACE AUTOMATION — commission ledger writer.
+ * Called once per completed order (see placeDbOrder hook above).
+ * Reads the order's items (price × qty, product section, seller), groups by
+ * (seller_id, item_type), computes the two-tier commission via
+ * lib/commission.ts, and inserts sb_commission_ledger rows with
+ * status 'pending'. Real payout happens later via Stripe/Razorpay —
+ * see sb_payout_ledger.gateway_ref (TODO: connect gateway in settings).
+ */
+export async function recordCommissionLedger(orderId: string): Promise<void> {
+  try {
+    const sb = sbOrThrow();
+    const { data: items, error } = await sb
+      .from('order_items')
+      .select('qty, price, seller_id, products(section)')
+      .eq('order_id', orderId);
+    if (error || !items || items.length === 0) return;
+
+    const { calcCommission, sectionToItemType } = await import('@/lib/commission');
+
+    // group by seller + item type
+    const groups = new Map<string, { sellerId: string | null; itemType: string; totalPaise: number; qty: number }>();
+    for (const it of items as any[]) {
+      const pricePaise = Math.round(Number(it.price ?? 0) * 100);
+      const qty = Math.max(1, Number(it.qty ?? 1));
+      const itemType = sectionToItemType(it.products?.section ?? 'naya');
+      const sellerId: string | null = it.seller_id ?? null;
+      const key = `${sellerId ?? 'none'}|${itemType}`;
+      const g = groups.get(key) ?? { sellerId, itemType, totalPaise: 0, qty: 0 };
+      g.totalPaise += pricePaise * qty;
+      g.qty += qty;
+      groups.set(key, g);
+    }
+
+    const rows = [...groups.values()].map((g) => {
+      const { commissionPaise, sellerPayoutPaise } = calcCommission(
+        g.itemType as any, g.totalPaise, g.qty,
+      );
+      return {
+        order_id: orderId,
+        seller_id: g.sellerId,
+        item_type: g.itemType,
+        item_total_paise: g.totalPaise,
+        commission_paise: commissionPaise,
+        seller_payout_paise: sellerPayoutPaise,
+        status: 'pending',
+      };
+    });
+
+    // Idempotency: don't double-record if retried (place_order is idempotent,
+    // but this hook may run again on a retry).
+    const { data: existing } = await sb
+      .from('sb_commission_ledger')
+      .select('id')
+      .eq('order_id', orderId)
+      .limit(1);
+    if (existing && existing.length > 0) return;
+
+    await sb.from('sb_commission_ledger').insert(rows);
+  } catch {
+    // best-effort only — the order itself already succeeded
   }
 }
 

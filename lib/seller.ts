@@ -32,6 +32,26 @@ export const CONDITION_LABELS: Record<ProductCondition, string> = {
   clearance: 'Clearance',
 };
 
+/* ----------------- Trust fields (seller declares, customer sees) -----------------
+ * Stock age + seller guarantee. The SELLER is responsible for these claims
+ * (marketplace model) — the platform shows them and enforces via
+ * returns / reviews / grievance if the promise breaks. */
+
+/** Stock-age options for the seller listing form (stored as-is). */
+export const STOCK_AGE_OPTIONS = [
+  'Naya (< 1 saal)',
+  '1-5 saal purana',
+  '5-10 saal purana',
+  '10-20 saal purana',
+  '20+ saal purana',
+];
+
+/** Catalog condition shown for a seller product, derived from their
+ *  "Product type" choice (which also sets their commission tier). */
+function sellerConditionToCatalog(c: ProductCondition): 'Like New' | 'Good' | 'Fair' {
+  return c === 'new' ? 'Like New' : c === 'refurbished' ? 'Good' : 'Fair';
+}
+
 /** Legacy helper: treats the whole subtotal as new products. */
 export function calcCommission(subtotal: number): { fee: number; sbDiscount: number } {
   const raw = Math.round(subtotal * COMMISSION_RATE);
@@ -119,6 +139,8 @@ export type SellerProduct = {
   description: string; // AI-assisted listing text
   stock: number;
   condition: ProductCondition;
+  stockAge?: string; // NEW (trust): seller-declared inventory age, e.g. "20+ saal purana"
+  sellerGuarantee?: string; // NEW (trust): seller-declared promise, max 200 chars, shown to customers
   createdAt: string;
 };
 
@@ -377,6 +399,9 @@ export function sellerProductToCatalog(sp: SellerProduct): Product {
     seller: sp.sellerId,
     sellerRating: 4.6,
     city: 'India',
+    condition: sellerConditionToCatalog(sp.condition),
+    stockAge: sp.stockAge,
+    sellerGuarantee: sp.sellerGuarantee,
     stock: sp.stock,
     dealScore: 60,
     createdAt: sp.createdAt,

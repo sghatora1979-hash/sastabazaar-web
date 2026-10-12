@@ -12,6 +12,7 @@ import {
   getOrdersForSeller, markShipped, sellerStats, SellerProduct, Order,
   COMMISSION_RATE, COMMISSION_MAX_PER_ORDER, COMMISSION_OLD_FLAT,
   CONDITION_LABELS, ProductCondition, CLOTH_SIZES, SHOE_SIZES,
+  STOCK_AGE_OPTIONS,
   payoutsUnlocked, verificationProgress,
   PROMO_LABELS, PromoKind, togglePromoPlacement, hasPromoPlacement,
 } from '@/lib/seller';
@@ -20,6 +21,7 @@ import { BulkImport } from '@/components/seller/BulkImport';
 import { useAuth } from '@/lib/auth';
 import { getMySeller, type MySeller } from '@/lib/db/shop';
 import { DbDashboard } from './DbDashboard';
+import { isPriceLegal } from '@/lib/commission';
 
 const IMG_FOR: Record<string, string> = {
   mobiles: '/images/mobiles-1.jpg', electronics: '/images/electronics-1.png',
@@ -66,6 +68,8 @@ export default function SellerDashboard() {
   const [cat, setCat] = useState('fashion-men');
   const [stock, setStock] = useState('10');
   const [condition, setCondition] = useState<ProductCondition>('new');
+  const [stockAge, setStockAge] = useState('');
+  const [sellerGuarantee, setSellerGuarantee] = useState('');
   const [promos, setPromos] = useState<PromoKind[]>([]); // promo placements chosen on the add form
   const [photos, setPhotos] = useState<string[]>([]);
   const [description, setDescription] = useState('');
@@ -186,20 +190,30 @@ export default function SellerDashboard() {
 
   const addProduct = () => {
     setFormError('');
-    const p = Number(price), m = Number(mrp || price), st = Number(stock);
+    const p = Number(price), m = Number(mrp || 0), st = Number(stock);
     if (title.trim().length < 3) { setFormError('Enter a product title.'); return; }
     if (!p || p <= 0) { setFormError('Enter a valid selling price.'); return; }
+    // MRP GUARDRAIL — Legal Metrology Act, 2009: MRP se upar bechna kanoon ke khilaf hai.
+    // Never sell above MRP. Block the save with a clear error.
+    if (m > 0 && !isPriceLegal(Math.round(p * 100), Math.round(m * 100))) {
+      setFormError('⛔ MRP se upar nahi bech sakte! Selling above MRP is illegal (Legal Metrology Act, 2009). Price ₹' + p + ' > MRP ₹' + m + '.');
+      return;
+    }
+    const finalMrp = m > 0 ? m : p;
     const imgs = photos.length ? photos : [IMG_FOR[cat] ?? '/images/home-1.jpg'];
     const created = addSellerProduct({
       sellerId: seller.id, title: title.trim(), titleHi: titleHi.trim() || undefined,
-      price: p, mrp: m >= p ? m : p,
+      price: p, mrp: finalMrp,
       categorySlug: cat, image: imgs[0], images: imgs, sizes, description: description.trim(),
       stock: st > 0 ? st : 1, condition,
+      stockAge: stockAge || undefined,
+      sellerGuarantee: sellerGuarantee.trim().slice(0, 200) || undefined,
     });
     promos.forEach(k => togglePromoPlacement(created.id, k));
     setPromos([]);
     setPromoTick(t => t + 1);
     setTitle(''); setTitleHi(''); setPrice(''); setMrp(''); setStock('10'); setCondition('new');
+    setStockAge(''); setSellerGuarantee('');
     setPhotos([]); setDescription(''); setSizes([]);
     reload(seller);
   };
@@ -248,6 +262,17 @@ export default function SellerDashboard() {
       </div>
 
       {/* verification banner — payouts gate, never blocks selling */}
+      {/* NEW 2026-10-12: Promotion Controls entry (marketplace automation) */}
+      <a
+        href="/seller/promotions"
+        className="mt-6 block bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-3xl p-4 flex items-center gap-3 hover:opacity-95"
+      >
+        <span className="text-3xl">📢</span>
+        <div className="flex-1">
+          <div className="font-extrabold">Promotion Controls — प्रमोशन कंट्रोल</div>
+          <div className="text-sm text-violet-100">Discount, Rewards, Lucky Draw, Spin &amp; Win — apne campaign khud set karo →</div>
+        </div>
+      </a>
       {unlocked ? (
         <div className="mt-6 bg-green-50 border border-green-200 rounded-3xl p-4 flex items-center gap-3">
           <span className="w-10 h-10 shrink-0 rounded-2xl bg-green-500 text-white flex items-center justify-center">
@@ -426,6 +451,26 @@ export default function SellerDashboard() {
                     ))}
                   </select>
                 </label>
+                <div className="rounded-2xl border-2 border-dashed border-amber-300 bg-amber-50/60 p-3">
+                  <span className="text-xs font-bold text-gray-700">📦 Stock ki sachchai <span className="font-normal text-gray-400">(customers ko dikhega — iska zimma aapka)</span></span>
+                  <label className="block mt-2">
+                    <span className="text-xs font-bold text-gray-500">Stock kitna purana hai?</span>
+                    <select value={stockAge} onChange={e => setStockAge(e.target.value)}
+                      className="mt-1 w-full px-4 py-3 bg-white rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40">
+                      <option value="">Chunein… (optional)</option>
+                      {STOCK_AGE_OPTIONS.map(o => (
+                        <option key={o} value={o}>{o}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="block mt-2">
+                    <span className="text-xs font-bold text-gray-500">🛡️ Aapki guarantee <span className="font-normal text-gray-400">(zyada se zyada 200 akshar)</span></span>
+                    <input value={sellerGuarantee} onChange={e => setSellerGuarantee(e.target.value)} maxLength={200}
+                      placeholder="Jaise: 20 saal aur chalega, meri guarantee! / Will last 20 more years, guaranteed!"
+                      className="mt-1 w-full px-4 py-3 bg-white rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40" />
+                    <span className="text-[10px] text-gray-400">{sellerGuarantee.length}/200</span>
+                  </label>
+                </div>
                 <div>
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-gray-500">Description</span>

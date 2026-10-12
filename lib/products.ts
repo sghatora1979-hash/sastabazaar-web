@@ -18,6 +18,8 @@ export type Product = {
   sellerRating: number;
   city: string;
   condition?: 'Like New' | 'Good' | 'Fair';
+  stockAge?: string; // seller-declared inventory age, e.g. "20+ saal purana"
+  sellerGuarantee?: string; // seller-declared promise (max 200 chars), shown to customers
   stock: number;
   dealScore: number;
   createdAt: string;
@@ -25,6 +27,22 @@ export type Product = {
   highlights: string[];
   promoteIn?: string[];
 };
+
+/** Customer-facing Hindi trust labels for product condition.
+ *  The seller's condition declaration is shown in friendly Hindi —
+ *  the seller remains responsible for the claim (marketplace model). */
+export function trustConditionLabel(c?: string): string | null {
+  if (!c) return null;
+  const map: Record<string, string> = {
+    'Like New': 'Bilkul naya ✨',
+    'Good': 'Purana - achhi halat 📦',
+    'Fair': 'Used - chaloo halat 🔧',
+    new: 'Bilkul naya ✨',
+    refurbished: 'Refurbished 🔧',
+    clearance: 'Purana - achhi halat 📦',
+  };
+  return map[c] ?? c;
+}
 
 // Demo product generator — replace with API/DB later
 const IMG = (seed: string) => `https://picsum.photos/seed/${seed}/800/800`;
