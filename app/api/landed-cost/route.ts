@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase';
 import { getRates, convert } from '@/lib/fx';
+import { getCategoryRate, slugToRateKey } from '@/lib/commission';
 
 // Server-side only — never pre-render at build time.
 export const dynamic = 'force-dynamic';
@@ -186,9 +187,10 @@ export async function POST(req: Request) {
   const lastMileInr = dest === 'CA' ? fromFxCur(9, 'CAD') : 99;
   L('Last-mile delivery', isFinite(lastMileInr) ? lastMileInr : 99, true);
 
-  // --- Marketplace fee: 10% of goods, disclosed (matches SastaBazaar commission) ---
-  const feeInr = goodsInr * 0.1;
-  L('Marketplace fee (10% — disclosed)', feeInr, false);
+  // --- Marketplace fee: category-wise, disclosed (matches SastaBazaar commission) ---
+  const feeRate = getCategoryRate(slugToRateKey(String(listing.category_name ?? '')));
+  const feeInr = goodsInr * feeRate;
+  L(`Marketplace fee (${(feeRate * 100).toFixed(0)}% — disclosed)`, feeInr, false);
 
   // --- Disclosed sourcing margin (admin-set, included in product price) ---
   const marginInr = Number(listing.disclosed_margin_inr) * qty;

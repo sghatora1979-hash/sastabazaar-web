@@ -9,7 +9,7 @@ import { formatINR } from '@/lib/utils';
 import { Trash2, Minus, Plus, ShoppingBag, ArrowRight, PackageCheck, Smartphone, CreditCard, Banknote, Loader2, Landmark, QrCode, Wallet } from 'lucide-react';
 import {
   ensureSeed, getAnyProduct, createOrder, calcCommissionForItems, OrderItem, COMMISSION_MAX_PER_ORDER,
-  COMMISSION_OLD_FLAT, COMMISSION_RATE, CONDITION_LABELS, ProductCondition,
+  COMMISSION_OLD_FLAT, CONDITION_LABELS, ProductCondition,
   PaymentMethod, Order,
 } from '@/lib/seller';
 import { notifyNewOrder } from '@/lib/notify';
@@ -245,7 +245,7 @@ export default function CartPage() {
           <div className="mt-4 space-y-2 text-sm">
             <div className="flex justify-between"><span className="text-gray-500">You paid</span><span className="font-bold">{formatINR(placed.total)}</span></div>
             <div className="flex justify-between">
-              <span className="text-gray-500">SastaBazaar commission ({Math.round(COMMISSION_RATE * 100)}% on new, max {formatINR(COMMISSION_MAX_PER_ORDER)}/order · {formatINR(COMMISSION_OLD_FLAT)}/pc old & clearance) → SastaBazaar</span>
+              <span className="text-gray-500">SastaBazaar commission (category-wise 3–12% on new, max {formatINR(COMMISSION_MAX_PER_ORDER)}/order · {formatINR(COMMISSION_OLD_FLAT)}/pc old & clearance) → SastaBazaar</span>
               <span className="font-bold text-[var(--primary)]">{formatINR(placed.platformFee)}</span>
             </div>
             {placed.sbDiscount > 0 && (
@@ -449,7 +449,7 @@ export default function CartPage() {
             </div>
             {step === 'payment' && (
               <div className="text-xs text-gray-400 pt-1">
-                incl. {formatINR(platformFee)} SastaBazaar fee ({Math.round(COMMISSION_RATE * 100)}% on new, max {formatINR(COMMISSION_MAX_PER_ORDER)}/order{oldUnits > 0 ? ` + ${formatINR(COMMISSION_OLD_FLAT)} × ${oldUnits} old/clearance pc` : ''}) → SastaBazaar
+                incl. {formatINR(platformFee)} SastaBazaar fee (category-wise 3–12% on new, max {formatINR(COMMISSION_MAX_PER_ORDER)}/order{oldUnits > 0 ? ` + ${formatINR(COMMISSION_OLD_FLAT)} × ${oldUnits} old/clearance pc` : ''}) → SastaBazaar
               </div>
             )}
           </div>

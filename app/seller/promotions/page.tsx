@@ -280,7 +280,7 @@ export default function SellerPromotions() {
 
       <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-2xl text-sm text-blue-900">
         <p className="font-bold mb-1">💰 Commission yaad rakhein:</p>
-        <p>NEW products: 10% (max ₹100/order) • OLD / Refurbished / Clearance: ₹1/piece.
+        <p>NEW products: category-wise — grocery 3%, electronics 6%, fashion 12% (max ₹100/order) • OLD / Refurbished / Clearance: ₹1/piece.
         Commission har order par apne aap katega — aapko kuch nahi karna.</p>
       </div>
     </div>

@@ -10,7 +10,7 @@ import {
   ensureSeed, getSessionSeller, setSessionSeller, Seller,
   getSellerProductsBySeller, addSellerProduct, deleteSellerProduct,
   getOrdersForSeller, markShipped, sellerStats, SellerProduct, Order,
-  COMMISSION_RATE, COMMISSION_MAX_PER_ORDER, COMMISSION_OLD_FLAT,
+  COMMISSION_MAX_PER_ORDER, COMMISSION_OLD_FLAT,
   CONDITION_LABELS, ProductCondition, CLOTH_SIZES, SHOE_SIZES,
   STOCK_AGE_OPTIONS,
   payoutsUnlocked, verificationProgress,
@@ -21,7 +21,7 @@ import { BulkImport } from '@/components/seller/BulkImport';
 import { useAuth } from '@/lib/auth';
 import { getMySeller, type MySeller } from '@/lib/db/shop';
 import { DbDashboard } from './DbDashboard';
-import { isPriceLegal } from '@/lib/commission';
+import { isPriceLegal, getCategoryRate, slugToRateKey } from '@/lib/commission';
 
 const IMG_FOR: Record<string, string> = {
   mobiles: '/images/mobiles-1.jpg', electronics: '/images/electronics-1.png',
@@ -446,7 +446,7 @@ export default function SellerDashboard() {
                     className="mt-1 w-full px-4 py-3 bg-gray-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40">
                     {(Object.keys(CONDITION_LABELS) as ProductCondition[]).map(c => (
                       <option key={c} value={c}>
-                        {CONDITION_LABELS[c]}{c === 'new' ? ` — 10% fee (max ${formatINR(COMMISSION_MAX_PER_ORDER)}/order)` : ` — just ${formatINR(COMMISSION_OLD_FLAT)} fee/piece`}
+                        {CONDITION_LABELS[c]}{c === 'new' ? ` — ${(getCategoryRate(slugToRateKey(cat)) * 100).toFixed(0)}% fee (max ${formatINR(COMMISSION_MAX_PER_ORDER)}/order)` : ` — just ${formatINR(COMMISSION_OLD_FLAT)} fee/piece`}
                       </option>
                     ))}
                   </select>
@@ -652,7 +652,7 @@ export default function SellerDashboard() {
               <div className="mt-4 space-y-3 text-sm">
                 <div className="flex justify-between"><span className="text-gray-500">Total sales ({stats.orders} orders)</span><span className="font-bold">{formatINR(stats.revenue)}</span></div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Commission — {Math.round(COMMISSION_RATE * 100)}% on new (max {formatINR(COMMISSION_MAX_PER_ORDER)}/order) + {formatINR(COMMISSION_OLD_FLAT)}/pc old & clearance</span>
+                  <span className="text-gray-500">Commission — category-wise 3–12% on new (max {formatINR(COMMISSION_MAX_PER_ORDER)}/order) + {formatINR(COMMISSION_OLD_FLAT)}/pc old & clearance</span>
                   <span className="font-bold text-red-500">− {formatINR(stats.fee)}</span>
                 </div>
                 <div className="border-t pt-3 flex justify-between text-lg">

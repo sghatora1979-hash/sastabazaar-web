@@ -3,6 +3,9 @@ import { getSupabase, isSupabaseConfigured } from '@/lib/supabase';
 
 // Proof endpoint: GET /api/db-health → { ok, configured, products, categories }
 // Proves the app can actually reach the Supabase database — no pretending.
+// Server-side only — never pre-render at build time.
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   if (!isSupabaseConfigured()) {
     return NextResponse.json({

@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { FileText, PenLine, CheckCircle2, AlertTriangle, Download } from 'lucide-react';
-import { ensureSeed, getSessionSeller, saveAgreement, COMMISSION_RATE, COMMISSION_MAX_PER_ORDER, COMMISSION_OLD_FLAT } from '@/lib/seller';
+import { ensureSeed, getSessionSeller, saveAgreement, COMMISSION_MAX_PER_ORDER, COMMISSION_OLD_FLAT } from '@/lib/seller';
 import { formatINR } from '@/lib/utils';
 
 export default function SellerAgreement() {
@@ -50,7 +50,7 @@ export default function SellerAgreement() {
     },
     {
       title: '4. Commission',
-      body: `Two rates. NEW products: ${Math.round(COMMISSION_RATE * 100)}% of the order subtotal, maximum ${formatINR(COMMISSION_MAX_PER_ORDER)} per order \u2014 anything above the cap is a discount from SastaBazaar's side, the seller never pays more. OLD / REFURBISHED / CLEARANCE products: flat ${formatINR(COMMISSION_OLD_FLAT)} per piece, no percentage.`,
+      body: `Category-wise rates. NEW products: grocery 3%, medicines 4%, books 5%, electronics 6%, home/beauty/toys/sports 8%, fashion 12% of the order subtotal, maximum ${formatINR(COMMISSION_MAX_PER_ORDER)} per order \u2014 anything above the cap is a discount from SastaBazaar's side, the seller never pays more. OLD / REFURBISHED / CLEARANCE products: flat ${formatINR(COMMISSION_OLD_FLAT)} per piece, no percentage.`,
     },
     {
       title: '5. Payouts',

@@ -86,7 +86,7 @@ export default function SellerHub() {
           </div>
           <div className="mt-6 space-y-3">
             {[
-              { icon: BadgePercent, t: 'Low commission', d: 'New products: 10% (never more than \u20b9100/order). Old / refurbished / clearance: just \u20b91 per piece.' },
+              { icon: BadgePercent, t: 'Low commission', d: 'Category-wise: grocery 3%, electronics 6%, fashion 12% (max \u20b9100/order). Old / refurbished / clearance: just \u20b91 per piece.' },
               { icon: ShieldCheck, t: 'Sell first, verify later', d: 'Start listing products immediately. Complete KYC + sign the agreement only when you want your payouts.' },
               { icon: Truck, t: 'You ship, we bring buyers', d: 'Order alerts on phone & email. You dispatch, you share the tracking ID.' },
               { icon: Sparkles, t: 'AI listing helper', d: 'Upload 5\u20136 photos, AI writes your title & description. Clothes & shoe sizes included.' },
