@@ -15,13 +15,14 @@ import { PRODUCTS } from './products';
  *  - a payment gateway (Razorpay etc.) for real money + commission split
  */
 
-/* Commission rule (set by Sandeep, 2026-10-08, two-tier):
- * NEW products: 10% of the new-items subtotal, NEVER exceeding COMMISSION_MAX_PER_ORDER.
- * Whatever 10% would have been above the cap is shown as "discount from
+/* Commission rule (set by Sandeep 2026-10-08, updated to category-wise 2026-10-12):
+ * NEW products: CATEGORY_RATES from lib/commission.ts (grocery 3% … fashion 12%),
+ * NEVER exceeding COMMISSION_MAX_PER_ORDER.
+ * Whatever the % would have been above the cap is shown as "discount from
  * SastaBazaar's side". OLD / REFURBISHED / CLEARANCE products: flat Rs 1 per piece.
  * Change the cap in one place below if he says otherwise. */
 export const COMMISSION_RATE = 0.10;
-export const COMMISSION_MAX_PER_ORDER = 100; // ₹100 max on the 10% portion — adjustable
+export const COMMISSION_MAX_PER_ORDER = 100; // ₹100 max on the % portion — adjustable
 export const COMMISSION_OLD_FLAT = 1; // ₹1 per piece on old / refurbished / clearance
 
 export type ProductCondition = 'new' | 'refurbished' | 'clearance';
@@ -59,7 +60,7 @@ export function calcCommission(subtotal: number): { fee: number; sbDiscount: num
   return { fee, sbDiscount: raw - fee };
 }
 
-/** Two-tier commission: 10% (capped) on new items + Rs 1 per piece on old/refurbished/clearance. */
+/** Two-tier commission: category-wise % (capped) on new items + Rs 1 per piece on old/refurbished/clearance. */
 export function calcCommissionForItems(
   items: { price: number; qty: number; condition?: ProductCondition }[]
 ): { fee: number; sbDiscount: number; newSubtotal: number; oldUnits: number } {
