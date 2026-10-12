@@ -70,7 +70,8 @@ export function Header() {
         {/* Main bar: logo | big search | actions */}
         <div className="max-w-7xl mx-auto px-3 sm:px-4 pt-2.5 pb-2 flex items-center gap-2 sm:gap-4">
           <button
-            className="lg:hidden p-2 -ml-1 text-gray-700"
+            className="lg:hidden w-10 h-10 -ml-1 rounded-xl text-white flex items-center justify-center hdr-btn"
+            style={{ background: `linear-gradient(135deg, ${BRAND}, #E05E00)`, ['--hdr-glow' as any]: 'rgba(251,119,1,.5)', minWidth: '40px', padding: 0 }}
             onClick={() => setMenuOpen(true)}
             aria-label="Menu"
           >
@@ -152,29 +153,29 @@ export function Header() {
             </AnimatePresence>
           </form>
 
-          {/* Actions */}
-          <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
+          {/* Actions — bright 3D buttons */}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             {/* Update 21: Bikers & Home Delivery nav (desktop) */}
-            <Link href="/delivery" className="hidden md:flex flex-col items-center px-2 py-1 text-gray-700 hover:text-gray-900" aria-label="Bikers and Home Delivery">
-              <span className="text-[20px] leading-none">🚴</span>
-              <span className="text-[10px] font-semibold">Delivery</span>
+            <Link href="/delivery" className="hdr-btn hidden md:flex flex-col items-center" style={{ background: 'linear-gradient(135deg,#4FC3F7,#0288D1)', ['--hdr-glow' as any]: 'rgba(2,136,209,.45)' }} aria-label="Bikers and Home Delivery">
+              <span className="hdr-ico">🚴</span>
+              <span className="hdr-lbl">Delivery</span>
             </Link>
             {/* Update 22: International Sellers nav (desktop) */}
-            <Link href="/international" className="hidden md:flex flex-col items-center px-2 py-1 text-gray-700 hover:text-gray-900" aria-label="International Sellers">
-              <span className="text-[20px] leading-none">🌍</span>
-              <span className="text-[10px] font-semibold">Global</span>
+            <Link href="/international" className="hdr-btn hidden md:flex flex-col items-center" style={{ background: 'linear-gradient(135deg,#81C784,#2E9E44)', ['--hdr-glow' as any]: 'rgba(46,158,68,.45)' }} aria-label="International Sellers">
+              <span className="hdr-ico">🌍</span>
+              <span className="hdr-lbl">Global</span>
             </Link>
-            <Link href="/account" className="hidden sm:flex flex-col items-center px-2 py-1 text-gray-700 hover:text-gray-900" aria-label="Account">
-              <User size={22} />
-              <span className="text-[10px] font-semibold">Account</span>
+            <Link href="/account" className="hdr-btn hidden sm:flex flex-col items-center" style={{ background: 'linear-gradient(135deg,#CE93D8,#7B1FA2)', ['--hdr-glow' as any]: 'rgba(123,31,162,.45)' }} aria-label="Account">
+              <span className="hdr-ico"><User size={20} /></span>
+              <span className="hdr-lbl">Account</span>
             </Link>
-            <Link href="/cart" className="relative flex flex-col items-center px-2 py-1 text-gray-700 hover:text-gray-900" aria-label="Cart">
-              <ShoppingCart size={22} />
-              <span className="text-[10px] font-semibold hidden sm:block">Cart</span>
+            <Link href="/cart" className="hdr-btn flex flex-col items-center" style={{ background: `linear-gradient(135deg, ${BRAND}, #E05E00)`, ['--hdr-glow' as any]: 'rgba(251,119,1,.5)' }} aria-label="Cart">
+              <span className="hdr-ico"><ShoppingCart size={20} /></span>
+              <span className="hdr-lbl hidden sm:block">Cart</span>
               {cartCount > 0 && (
                 <span
-                  className="absolute top-0 right-1 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center shadow"
-                  style={{ background: BRAND }}
+                  className="absolute -top-1.5 -right-1.5 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center shadow border-2 border-white"
+                  style={{ background: '#E53935' }}
                 >
                   {cartCount}
                 </span>
