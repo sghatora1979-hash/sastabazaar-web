@@ -1,26 +1,14 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter, Noto_Sans_Devanagari } from 'next/font/google';
 import './globals.css';
-import { ThemeProvider } from '@/components/ui/ThemeProvider';
-import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
-import { BottomNav } from '@/components/layout/BottomNav';
-import { CelebrationBlast } from '@/components/festival/CelebrationBlast';
-import { primeProductCache } from '@/lib/db/products';
-import { AuthProvider } from '@/lib/auth';
-import { MatrixBackdrop } from '@/components/ui/MatrixBackdrop';
-import { TouchGlow } from '@/components/ui/TouchGlow';
-// Update 21: PWA service-worker registration (installable app shell).
-import { PwaRegister } from '@/components/delivery/PwaRegister';
-
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' });
-const noto = Noto_Sans_Devanagari({ subsets: ['devanagari'], variable: '--font-noto', display: 'swap' });
+import { SiteHeader } from '@/components/Header';
+import { SiteFooter } from '@/components/Footer';
+import { ThemeProvider } from '@/components/ThemeProvider';
+import { CoinRain } from '@/components/CoinRain';
+import { PwaRegister } from '@/components/PwaRegister';
 
 export const metadata: Metadata = {
-  title: 'SastaBazaar — सस्ते सामान का बाज़ार',
-  description: 'India\'s smartest 4-in-1 marketplace. Naya bhi, Purana bhi, Clearance, aur Local — sab kuch ek jagah.',
-  keywords: ['sastabazaar', 'online bazaar', 'second hand', 'clearance', 'local market', 'india marketplace'],
-  // Update 21: installable PWA manifest + icons.
+  title: 'Quasar — Demo Crypto Exchange',
+  description: 'Quasar is a paper-trading demo crypto exchange. Live market data, zero real money.',
   manifest: '/manifest.webmanifest',
   icons: {
     icon: [
@@ -29,47 +17,29 @@ export const metadata: Metadata = {
     ],
     apple: [{ url: '/icons/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
   },
-  appleWebApp: { capable: true, statusBarStyle: 'default', title: 'SastaBazaar' },
-  metadataBase: new URL('https://sastabazaar.in'),
-  openGraph: {
-    title: 'SastaBazaar — सस्ते सामान का बाज़ार',
-    description: 'Naya bhi. Purana bhi. Sabse sastey.',
-    type: 'website'
-  }
+  appleWebApp: { capable: true, statusBarStyle: 'black-translucent', title: 'Quasar' },
 };
 
 export const viewport: Viewport = {
-  themeColor: '#FF6B35',
+  themeColor: '#0a0a0f',
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 5
+  maximumScale: 5,
 };
 
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  // Phase 0: load the product catalog from Supabase (falls back to demo data
-  // if the database is unreachable). Sync components below read the primed
-  // module-level catalog, so no UI code changes are needed.
-  await primeProductCache();
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="hi" className={`${inter.variable} ${noto.variable}`}>
-      <body>
-        {/* Update 18: full-site matrix rain, fixed behind everything (z-0). */}
-        <MatrixBackdrop />
-        {/* Update 20: ambient finger-follow glow, also behind everything. */}
-        <TouchGlow />
-        {/* Update 21: PWA service worker (no visual output). */}
+    <html lang="en">
+      <body className="bg-void text-slate-200 antialiased min-h-screen flex flex-col">
         <PwaRegister />
-        <div className="relative z-[1]">
         <ThemeProvider>
-          <AuthProvider>
-          <Header />
-          <main className="min-h-screen pb-20 lg:pb-0">{children}</main>
-          <Footer />
-          <BottomNav />
-          <CelebrationBlast />
-          </AuthProvider>
+          <CoinRain />
+          <div className="relative z-10 flex flex-col min-h-screen">
+            <SiteHeader />
+            <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-6">{children}</main>
+            <SiteFooter />
+          </div>
         </ThemeProvider>
-        </div>
       </body>
     </html>
   );
