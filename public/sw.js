@@ -1,7 +1,7 @@
-// Quasar service worker — installable PWA (demo/paper-trading, no real money).
+// SastaBazaar service worker (Update 21 — PWA).
 // Minimal and safe: cache-first for static assets, network-first for pages.
 // Versioned cache so updates roll out cleanly.
-const CACHE = 'quasar-v1';
+const CACHE = 'sastabazaar-v21';
 const STATIC_ASSETS = [
   '/',
   '/manifest.webmanifest',
@@ -20,6 +20,7 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
+    )
   );
   self.clients.claim();
 });
@@ -51,7 +52,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Pages & API: network-first, fall back to cache, then home.
+  // Pages & API: network-first, fall back to cache, then offline page.
   event.respondWith(
     fetch(request)
       .then((res) => {
