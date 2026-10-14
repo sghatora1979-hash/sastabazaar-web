@@ -171,6 +171,15 @@ export default function BecomePartner() {
         </p>
       </section>
 
+      {/* Trucks / tempos / drivers — registration lives in the delivery section */}
+      <Link href="/delivery/vehicles" className={`${cardCls} mt-6 group flex items-center justify-between hover:border-[#FB7701]/60 transition`}>
+        <div>
+          <h3 className="font-extrabold text-sm text-gray-900">🚚 Own a Truck, Tempo or drive one?</h3>
+          <p className="text-xs text-gray-600 mt-0.5">Register your Big Truck / Small Truck / Tempo, or join as a driver — ID + licence only.</p>
+        </div>
+        <ArrowRight size={20} className="text-gray-400 group-hover:translate-x-1 transition shrink-0" />
+      </Link>
+
       <Link href="/biker/register" className={`${primaryBtnCls} mt-6 flex items-center justify-center gap-2`} style={{ background: BRAND }}>
         Register as a Delivery Partner <ArrowRight size={18} />
       </Link>

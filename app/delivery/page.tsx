@@ -148,6 +148,16 @@ export default function DeliveryLanding() {
           </div>
           <ChevronRight size={20} className="text-gray-400 group-hover:translate-x-1 transition" />
         </Link>
+        <Link
+          href="/delivery/vehicles"
+          className={`${cardCls} group flex items-center justify-between hover:border-[#FB7701]/60 transition`}
+        >
+          <div>
+            <h3 className="font-extrabold text-sm text-gray-900">🚚 Trucks, Tempos &amp; Drivers</h3>
+            <p className="text-xs text-gray-600 mt-0.5">Register a Big Truck, Small Truck or Tempo — or join as a driver (ID + licence only).</p>
+          </div>
+          <ChevronRight size={20} className="text-gray-400 group-hover:translate-x-1 transition" />
+        </Link>
         <div className={cardCls}>
           <h3 className="font-extrabold text-sm text-gray-900">Track my delivery</h3>
           <div className="flex gap-2 mt-2">
