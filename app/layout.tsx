@@ -32,11 +32,28 @@ export const metadata: Metadata = {
     apple: [{ url: '/icons/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
   },
   appleWebApp: { capable: true, statusBarStyle: 'default', title: 'SastaBazaar' },
-  metadataBase: new URL('https://sastabazaar.in'),
+  metadataBase: new URL('https://sastabazaarindia.com'),
+  alternates: { canonical: '/' },
   openGraph: {
     title: 'SastaBazaar — सस्ते सामान का बाज़ार',
     description: 'Naya bhi. Purana bhi. Sabse sastey.',
-    type: 'website'
+    type: 'website',
+    url: 'https://sastabazaarindia.com/',
+    siteName: 'SastaBazaar',
+    images: [
+      {
+        url: '/og-image.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'SastaBazaar — सस्ते सामान का बाज़ार'
+      }
+    ]
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'SastaBazaar — सस्ते सामान का बाज़ार',
+    description: 'Naya bhi. Purana bhi. Sabse sastey.',
+    images: ['/og-image.jpg']
   }
 };
 
@@ -55,6 +72,44 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="hi" className={`${inter.variable} ${noto.variable}`}>
       <body>
+        {/* Update 22: JSON-LD structured data — helps Google & AI crawlers understand the site. */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'Organization',
+              name: 'SastaBazaar',
+              url: 'https://sastabazaarindia.com/',
+              logo: 'https://sastabazaarindia.com/icons/icon-512.png',
+              description:
+                "India's smartest 4-in-1 marketplace. Naya bhi, Purana bhi, Clearance, aur Local — sab kuch ek jagah.",
+              address: {
+                '@type': 'PostalAddress',
+                addressLocality: 'Bangalore',
+                addressRegion: 'Karnataka',
+                addressCountry: 'IN'
+              }
+            })
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'WebSite',
+              name: 'SastaBazaar',
+              url: 'https://sastabazaarindia.com/',
+              inLanguage: ['hi', 'en'],
+              potentialAction: {
+                '@type': 'SearchAction',
+                target: 'https://sastabazaarindia.com/search?q={search_term_string}',
+                'query-input': 'required name=search_term_string'
+              }
+            })
+          }}
+        />
         {/* Update 18: full-site matrix rain, fixed behind everything (z-0). */}
         <MatrixBackdrop />
         {/* Update 20: ambient finger-follow glow, also behind everything. */}

@@ -82,12 +82,11 @@ export default function ContactPage() {
             </div>
           </div>
 
-          <a href="https://wa.me/919000000000?text=Namaskar%2C%20I%20need%20help%20with%20SastaBazaar"
-            target="_blank" rel="noopener noreferrer"
-            className="mt-6 w-full inline-flex items-center justify-center gap-2 bg-[#25D366] text-white font-bold py-3.5 rounded-2xl hover:brightness-95">
-            <MessageCircle size={19} /> Chat on WhatsApp
-          </a>
-          <p className="text-xs text-gray-400 text-center mt-2">Coming soon — connect your real WhatsApp Business number at launch.</p>
+          <span
+            className="mt-6 w-full inline-flex items-center justify-center gap-2 bg-[#25D366]/40 text-white font-bold py-3.5 rounded-2xl cursor-not-allowed">
+            <MessageCircle size={19} /> WhatsApp — Coming Soon
+          </span>
+          <p className="text-xs text-gray-400 text-center mt-2">Connect your real WhatsApp Business number at launch.</p>
 
           {/* quick links */}
           <div className="grid grid-cols-3 gap-2 mt-6">
