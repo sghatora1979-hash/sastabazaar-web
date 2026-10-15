@@ -120,9 +120,18 @@ HONESTY RULES: order tracking and rider/driver details are DEMO until real couri
 
 type ImgPart = { mime: string; data: string } | null;
 
-async function callGemini(question: string, history: string[], lang: LangCode, userEmail: string | undefined, sizeProfile: string | undefined, img: ImgPart, catalog: string): Promise<string> {
+// Models to try in order — first success wins. The default changed because
+// Google shut down gemini-2.0-flash on 2026-06-01; the fallback chain keeps
+// the chatbot alive through future model retirements too.
+const MODEL_CANDIDATES: string[] = [
+  process.env.AI_MODEL || '',
+  'gemini-2.5-flash',
+  'gemini-2.5-flash-lite',
+  'gemini-3.5-flash',
+].filter(Boolean).filter((m, i, a) => a.indexOf(m) === i);
+
+async function tryGeminiModel(model: string, question: string, history: string[], lang: LangCode, userEmail: string | undefined, sizeProfile: string | undefined, img: ImgPart, catalog: string): Promise<{ text: string }> {
   const key = process.env.AI_API_KEY!;
-  const model = process.env.AI_MODEL || 'gemini-2.0-flash';
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
   const userParts: { text?: string; inlineData?: { mimeType: string; data: string } }[] = [];
   if (img) userParts.push({ inlineData: { mimeType: img.mime, data: img.data } });
@@ -140,12 +149,54 @@ async function callGemini(question: string, history: string[], lang: LangCode, u
       generationConfig: { maxOutputTokens: 500, temperature: 0.4 },
     }),
   });
-  if (!res.ok) throw new Error(`gemini ${res.status}`);
+  if (!res.ok) {
+    const errBody = await res.text().catch(() => '').then((t) => t.slice(0, 300));
+    throw new Error(`gemini ${res.status} @${model}: ${errBody}`);
+  }
   const data = await res.json();
   const text: string | undefined =
     data?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text || '').join('');
-  if (!text) throw new Error('gemini empty');
-  return text.trim();
+  if (!text) throw new Error(`gemini empty @${model}`);
+  return { text: text.trim() };
+}
+
+async function callGemini(question: string, history: string[], lang: LangCode, userEmail: string | undefined, sizeProfile: string | undefined, img: ImgPart, catalog: string): Promise<string> {
+  let lastErr: unknown = null;
+  for (const model of MODEL_CANDIDATES) {
+    try {
+      const { text } = await tryGeminiModel(model, question, history, lang, userEmail, sizeProfile, img, catalog);
+      return text;
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error('gemini all models failed');
+}
+
+// Diagnostic probe: POST {"diag":true} returns the raw Google status/error per
+// model WITHOUT exposing the key. Used to debug connection issues.
+async function diagGemini(): Promise<object> {
+  const key = process.env.AI_API_KEY;
+  const attempts: object[] = [];
+  if (!key) return { keyPresent: false, attempts };
+  for (const model of MODEL_CANDIDATES) {
+    try {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+          body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: 'ping' }] }] }),
+        },
+      );
+      const body = await res.text().catch(() => '').then((t) => t.slice(0, 200));
+      attempts.push({ model, status: res.status, ok: res.ok, body });
+      if (res.ok) break;
+    } catch (e) {
+      attempts.push({ model, status: 'fetch-failed', error: String(e).slice(0, 200) });
+    }
+  }
+  return { keyPresent: true, keyPrefix: key.slice(0, 3), keyLength: key.length, provider: getProvider(), attempts };
 }
 
 async function callOpenAICompatible(question: string, history: string[], lang: LangCode, userEmail: string | undefined, sizeProfile: string | undefined, img: ImgPart, catalog: string): Promise<string> {
@@ -179,6 +230,10 @@ export async function POST(req: Request) {
 
     if (body.ping) {
       return NextResponse.json({ ai: !!key, provider: getProvider() });
+    }
+
+    if (body.diag) {
+      return NextResponse.json(await diagGemini());
     }
 
     const question = String(body.question || '').slice(0, MAX_Q).trim();
