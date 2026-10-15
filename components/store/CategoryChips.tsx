@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useRef } from 'react';
 import { BRAND } from './ProductCard';
 
 const CHIPS = [
@@ -24,15 +25,34 @@ const CHIPS = [
  */
 export function CategoryChips() {
   const path = usePathname();
+  const stripRef = useRef<HTMLDivElement>(null);
+  const activeRef = useRef<HTMLAnchorElement>(null);
+
+  // Keep the active pill visible (e.g. "Sell" when on /seller)
+  useEffect(() => {
+    activeRef.current?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+  }, [path]);
+
+  const nudge = (dir: 1 | -1) => {
+    stripRef.current?.scrollBy({ left: dir * 240, behavior: 'smooth' });
+  };
+
+  const arrow =
+    'absolute top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-white shadow-md border border-gray-200 text-gray-600 text-xs flex items-center justify-center hover:bg-gray-50 active:scale-95';
+
   return (
     <div className="border-t border-gray-100 bg-white">
-      <div className="max-w-7xl mx-auto px-3 sm:px-4">
-        <div className="flex gap-2 overflow-x-auto no-scrollbar py-2">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 relative">
+        <button aria-label="Pehle wale buttons dekho" onClick={() => nudge(-1)} className={`${arrow} left-0`}>
+          ◀
+        </button>
+        <div ref={stripRef} className="flex gap-2 overflow-x-auto no-scrollbar py-2 px-8">
           {CHIPS.map(c => {
             const active = c.href === '/' ? path === '/' : path.startsWith(c.href);
             return (
               <Link
                 key={c.href}
+                ref={active ? activeRef : undefined}
                 href={c.href}
                 className={`shrink-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[13px] font-semibold transition whitespace-nowrap ${
                   active
@@ -47,6 +67,9 @@ export function CategoryChips() {
             );
           })}
         </div>
+        <button aria-label="Agli wale buttons dekho" onClick={() => nudge(1)} className={`${arrow} right-0`}>
+          ▶
+        </button>
       </div>
     </div>
   );
