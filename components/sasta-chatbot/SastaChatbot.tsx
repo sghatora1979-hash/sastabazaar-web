@@ -74,6 +74,12 @@ const NO_MATCH_EN = "Didn't catch that";
 /* Escape HTML, then allow **bold**, line breaks and [text](/path) links. */
 function mdLite(s: string): string {
   let h = s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  // Restore safe tags the API intentionally sends (<b>, <i>, <br>, <a href="/...">).
+  // Everything else (e.g. <script>) stays escaped — XSS-safe.
+  h = h.replace(/&lt;(\/?)(b|i|br)(\/?)&gt;/g, '<$1$2$3>');
+  h = h.replace(/&lt;a href=&quot;(\/[^"&]*)&quot;&gt;/g, '<a href="$1">');
+  h = h.replace(/&lt;a href="(\/[^"&]*)"&gt;/g, '<a href="$1">');
+  h = h.replace(/&lt;\/a&gt;/g, '</a>');
   h = h.replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
   h = h.replace(/\[([^\]]+)\]\((\/[^)]+)\)/g, '<a href="$2">$1</a>');
   h = h.replace(/\n{2,}/g, '<br><br>').replace(/\n/g, '<br>');
