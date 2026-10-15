@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { CATEGORIES } from '@/lib/categories';
+import { ShareButtons } from './ShareButtons';
 
 export function Footer() {
   return (
@@ -16,6 +17,8 @@ export function Footer() {
           <p className="text-xs text-gray-500 mt-4">
             Made in India
           </p>
+          {/* Update 23: social share buttons below "Made in India". */}
+          <ShareButtons />
         </div>
 
         <div>
@@ -49,7 +52,7 @@ export function Footer() {
           <ul className="space-y-2 text-sm">
             <li><Link href="/contact" className="hover:text-white font-semibold text-white">Contact Us</Link></li>
             <li><Link href="/seller/agreement" className="hover:text-white">Seller Agreement</Link></li>
-            <li><a href="https://wa.me/919000000000" className="hover:text-white">WhatsApp Support <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded-full font-bold">soon</span></a></li>
+            <li><span className="text-gray-400 cursor-default">WhatsApp Support <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded-full font-bold">soon</span></span></li>
             <li><Link href="/track" className="hover:text-white">Track Order</Link></li>
             <li><Link href="/return-policy" className="hover:text-white">Returns</Link></li>
             <li><Link href="/shipping" className="hover:text-white">Shipping</Link></li>

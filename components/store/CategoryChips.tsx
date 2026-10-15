@@ -28,9 +28,23 @@ export function CategoryChips() {
   const stripRef = useRef<HTMLDivElement>(null);
   const activeRef = useRef<HTMLAnchorElement>(null);
 
-  // Keep the active pill visible (e.g. "Sell" when on /seller)
+  // Keep the active pill fully visible (e.g. "Sell" when on /seller).
+  // Rect math instead of scrollIntoView: reliable even when layout shifts
+  // after fonts load, and it never scrolls the page itself vertically.
   useEffect(() => {
-    activeRef.current?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+    const strip = stripRef.current;
+    const pill = activeRef.current;
+    if (!strip || !pill) return;
+    const center = () => {
+      const s = strip.getBoundingClientRect();
+      const p = pill.getBoundingClientRect();
+      const delta = (p.left + p.width / 2) - (s.left + s.width / 2);
+      if (Math.abs(delta) > 2) strip.scrollBy({ left: delta, behavior: 'smooth' });
+    };
+    center();
+    const raf = requestAnimationFrame(() => requestAnimationFrame(center));
+    const timer = setTimeout(center, 600);
+    return () => { cancelAnimationFrame(raf); clearTimeout(timer); };
   }, [path]);
 
   const nudge = (dir: 1 | -1) => {
@@ -38,7 +52,7 @@ export function CategoryChips() {
   };
 
   const arrow =
-    'absolute top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-white shadow-md border border-gray-200 text-gray-600 text-xs flex items-center justify-center hover:bg-gray-50 active:scale-95';
+    'absolute top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white shadow-md border border-gray-200 text-gray-700 text-sm font-bold flex items-center justify-center hover:bg-gray-50 active:scale-95';
 
   return (
     <div className="border-t border-gray-100 bg-white">
