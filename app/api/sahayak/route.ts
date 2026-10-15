@@ -120,14 +120,15 @@ HONESTY RULES: order tracking and rider/driver details are DEMO until real couri
 
 type ImgPart = { mime: string; data: string } | null;
 
-// Models to try in order — first success wins. The default changed because
-// Google shut down gemini-2.0-flash on 2026-06-01; the fallback chain keeps
-// the chatbot alive through future model retirements too.
+// Models to try in order — first success wins. Google retired older models for
+// NEW API users ("no longer available to new users"), so the chain leads with
+// the models Google itself recommends as replacements (Oct 2026).
 const MODEL_CANDIDATES: string[] = [
   process.env.AI_MODEL || '',
-  'gemini-2.5-flash',
-  'gemini-2.5-flash-lite',
+  'gemini-3.8-flash',
+  'gemini-3.6-flash',
   'gemini-3.5-flash',
+  'gemini-3.5-flash-lite',
 ].filter(Boolean).filter((m, i, a) => a.indexOf(m) === i);
 
 async function tryGeminiModel(model: string, question: string, history: string[], lang: LangCode, userEmail: string | undefined, sizeProfile: string | undefined, img: ImgPart, catalog: string): Promise<{ text: string }> {
