@@ -12,6 +12,8 @@ import { MatrixBackdrop } from '@/components/ui/MatrixBackdrop';
 import { TouchGlow } from '@/components/ui/TouchGlow';
 // Update 21: PWA service-worker registration (installable app shell).
 import { PwaRegister } from '@/components/delivery/PwaRegister';
+// Chatbot v2: Sasta Sahayak AI — floating help widget on every page.
+import { SastaChatbot } from '@/components/sasta-chatbot/SastaChatbot';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' });
 const noto = Noto_Sans_Devanagari({ subsets: ['devanagari'], variable: '--font-noto', display: 'swap' });
@@ -67,6 +69,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <Footer />
           <BottomNav />
           <CelebrationBlast />
+          <SastaChatbot />
           </AuthProvider>
         </ThemeProvider>
         </div>
