@@ -10,12 +10,12 @@ import { useState } from 'react';
 import { Share2, MessageCircle, Send, Facebook, Instagram, Link2, Check, Youtube } from 'lucide-react';
 
 export function ShareButtons({
-  title,
+  title = 'SastaBazaar',
   titleHi,
   priceText,
   compact = false,
 }: {
-  title: string;
+  title?: string;
   titleHi?: string;
   priceText?: string;
   compact?: boolean;
