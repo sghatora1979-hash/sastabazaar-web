@@ -1,7 +1,8 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { getProductsBySection, Section, Product } from '@/lib/products';
 import { getSellerProducts, sellerProductToCatalog } from '@/lib/seller';
+import { CATEGORIES } from '@/lib/categories';
 import { ProductCard3D } from '@/components/3d/ProductCard3D';
 import { SectionBadge } from '@/components/ui/SectionBadge';
 
@@ -14,6 +15,7 @@ export type BazaarConfig = {
   description: string;
 };
 
+/** Update 26: clearance groups items by category, top to bottom. */
 export function BazaarPage({ config }: { config: BazaarConfig }) {
   // Server renders the seed catalog; seller products (localStorage) merge
   // in on the client so hydration always matches.
@@ -27,7 +29,21 @@ export function BazaarPage({ config }: { config: BazaarConfig }) {
       );
     } catch { /* private mode etc. — catalog still renders */ }
   }, [config.section]);
-  const products = [...sellerExtra, ...getProductsBySection(config.section, 40)];
+  const products = [...sellerExtra, ...getProductsBySection(config.section, 60)];
+
+  const grouped = useMemo(() => {
+    if (config.section !== 'clearance') return null;
+    const map = new Map<string, Product[]>();
+    for (const p of products) {
+      const key = p.categoryId || '0';
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(p);
+    }
+    return [...map.entries()].map(([catId, items]) => ({
+      cat: CATEGORIES.find(c => c.id === catId),
+      items,
+    }));
+  }, [products, config.section]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -46,11 +62,34 @@ export function BazaarPage({ config }: { config: BazaarConfig }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
-        {products.map((p, i) => (
-          <ProductCard3D key={p.id} product={p} index={i} />
-        ))}
-      </div>
+      {grouped ? (
+        <div className="space-y-10">
+          {grouped.map(({ cat, items }) => (
+            <section key={cat?.id ?? 'other'}>
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-2xl">{cat?.emoji ?? '📦'}</span>
+                <h2 className="text-xl font-extrabold text-gray-900">
+                  {cat ? `${cat.nameHi} · ${cat.name}` : 'Other items'}
+                </h2>
+                <span className="text-xs font-bold text-gray-400 bg-gray-100 px-2.5 py-1 rounded-full">
+                  {items.length}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
+                {items.map((p, i) => (
+                  <ProductCard3D key={p.id} product={p} index={i} />
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
+          {products.map((p, i) => (
+            <ProductCard3D key={p.id} product={p} index={i} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
