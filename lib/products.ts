@@ -26,6 +26,12 @@ export type Product = {
   description: string;
   highlights: string[];
   promoteIn?: string[];
+  // Optional seller-declared variants (Update 25) — all editable, all optional.
+  sizes?: string[];
+  colors?: string[];
+  weightKg?: number;
+  dimensionsCm?: string; // e.g. "30 × 20 × 10"
+  sizeTemplate?: string; // 'clothing' | 'footwear' | 'custom' | undefined
 };
 
 /** Customer-facing Hindi trust labels for product condition.

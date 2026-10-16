@@ -17,7 +17,7 @@ export const CATEGORIES: Category[] = [
   { id: '7',  slug: 'home',          name: 'Home & Kitchen',     nameHi: 'घर',            emoji: '🏠', subcategories: ['Cookware', 'Storage', 'Decor', 'Bedding', 'Lighting'] },
   { id: '8',  slug: 'furniture',     name: 'Furniture',          nameHi: 'फर्नीचर',       emoji: '🛋️', subcategories: ['Sofas', 'Beds', 'Tables', 'Chairs', 'Wardrobes'] },
   { id: '9',  slug: 'appliances',    name: 'Appliances',         nameHi: 'उपकरण',         emoji: '🔌', subcategories: ['Fridges', 'Washing Machines', 'ACs', 'Microwaves', 'Fans'] },
-  { id: '10', slug: 'books',         name: 'Books',              nameHi: 'किताबें',       emoji: '📚', subcategories: ['Academic', 'Fiction', 'Comics', 'Competitive', 'Kids'] },
+  { id: '10', slug: 'books',         name: 'Books',              nameHi: 'किताबें',       emoji: '📚', subcategories: ['NCERT', 'CBSE', 'ICSE', 'State Boards', 'Hindi Books', 'Engineering', 'Medical', 'UPSC', 'BA', 'BCom', 'BSc', 'MSc', 'BEd', 'Educational', 'Fiction', 'Comics', 'Kids'] },
   { id: '11', slug: 'toys',          name: 'Toys & Baby',        nameHi: 'खिलौने',        emoji: '🧸', subcategories: ['Toys', 'Diapers', 'Clothing', 'Feeding', 'Strollers'] },
   { id: '12', slug: 'sports',        name: 'Sports & Fitness',   nameHi: 'खेल',          emoji: '⚽', subcategories: ['Cricket', 'Football', 'Gym', 'Yoga', 'Cycling'] },
   { id: '13', slug: 'grocery',       name: 'Grocery',            nameHi: 'किराना',        emoji: '🛒', subcategories: ['Staples', 'Snacks', 'Beverages', 'Spices', 'Organic'] },

@@ -29,6 +29,11 @@ type DbProduct = {
   deal_score: number;
   status: string;
   created_at: string;
+  sizes?: string[] | null;
+  colors?: string[] | null;
+  weight_kg?: number | null;
+  dimensions_cm?: string | null;
+  size_template?: string | null;
 };
 
 const CATEGORY_ID_BY_SLUG: Record<string, string> = {
@@ -64,6 +69,11 @@ export function mapDbProduct(r: DbProduct): Product {
     description: r.description ?? '',
     highlights: r.highlights ?? [],
     promoteIn: r.promote_in ?? [],
+    sizes: r.sizes ?? [],
+    colors: r.colors ?? [],
+    weightKg: r.weight_kg != null ? Number(r.weight_kg) : undefined,
+    dimensionsCm: r.dimensions_cm ?? undefined,
+    sizeTemplate: r.size_template ?? undefined,
   };
 }
 

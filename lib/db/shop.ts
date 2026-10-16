@@ -242,7 +242,8 @@ export async function applyAsSeller(input: {
 
 /** Saves a delivery address for the signed-in user; returns the new id. */
 export async function saveAddressDb(input: {
-  label?: string; line1: string; city: string; pin: string; phone: string;
+  label?: string; line1: string; line2?: string; landmark?: string;
+  city: string; district?: string; state?: string; pin: string; phone: string;
 }): Promise<{ ok: boolean; id?: string; error?: string }> {
   try {
     const sb = sbOrThrow();
@@ -252,7 +253,11 @@ export async function saveAddressDb(input: {
       profile_id: user.id,
       label: input.label ?? 'Home',
       line1: input.line1,
+      line2: input.line2 || null,
+      landmark: input.landmark || null,
       city: input.city,
+      district: input.district || null,
+      state: input.state || null,
       pin: input.pin,
       phone: input.phone,
     }).select('id').single();
@@ -280,6 +285,9 @@ export type NewDbProduct = {
   image?: string; images?: string[]; stock: number;
   condition: 'new' | 'refurbished' | 'clearance';
   promoteIn?: string[];
+  sizes?: string[]; colors?: string[]; weightKg?: number;
+  dimensionsCm?: string; sizeTemplate?: string;
+  subcategory?: string;
 };
 
 const SECTION_BY_CONDITION = { new: 'naya', refurbished: 'purana', clearance: 'clearance' } as const;
@@ -309,11 +317,54 @@ export async function createSellerProductDb(
       condition: p.condition === 'new' ? null : p.condition === 'refurbished' ? 'Good' : 'Fair',
       status: 'active',
       promote_in: p.promoteIn ?? [],
+      sizes: p.sizes ?? [],
+      colors: p.colors ?? [],
+      weight_kg: p.weightKg ?? null,
+      dimensions_cm: p.dimensionsCm || null,
+      size_template: p.sizeTemplate || null,
+      subcategory: p.subcategory || null,
     }).select('id').single();
     if (error) return { ok: false, error: error.message };
     return { ok: true, id: (data as any).id as string };
   } catch (e: any) {
     return { ok: false, error: e?.message ?? 'Could not add product' };
+  }
+}
+
+/** Updates a seller's own product (all fields editable, Update 25). */
+export async function updateSellerProductDb(
+  productId: string, sellerId: string, p: Partial<NewDbProduct>,
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const sb = sbOrThrow();
+    const patch: Record<string, any> = {};
+    if (p.title !== undefined) patch.title = p.title;
+    if (p.titleHi !== undefined) patch.title_hi = p.titleHi || null;
+    if (p.description !== undefined) patch.description = p.description || null;
+    if (p.price !== undefined) patch.price = p.price;
+    if (p.mrp !== undefined) {
+      patch.mrp = p.mrp;
+      if (p.price !== undefined && p.mrp > p.price) {
+        patch.discount_percent = Math.round((1 - p.price / p.mrp) * 100);
+      }
+    }
+    if (p.categorySlug !== undefined) patch.category_slug = p.categorySlug;
+    if (p.image !== undefined) patch.image = p.image || null;
+    if (p.images !== undefined) patch.images = p.images;
+    if (p.stock !== undefined) patch.stock = Math.max(0, p.stock | 0);
+    if (p.promoteIn !== undefined) patch.promote_in = p.promoteIn;
+    if (p.sizes !== undefined) patch.sizes = p.sizes;
+    if (p.colors !== undefined) patch.colors = p.colors;
+    if (p.weightKg !== undefined) patch.weight_kg = p.weightKg;
+    if (p.dimensionsCm !== undefined) patch.dimensions_cm = p.dimensionsCm || null;
+    if (p.sizeTemplate !== undefined) patch.size_template = p.sizeTemplate || null;
+    if (p.subcategory !== undefined) patch.subcategory = p.subcategory || null;
+    const { error } = await sb.from('products').update(patch)
+      .eq('id', productId).eq('seller_id', sellerId);
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  } catch (e: any) {
+    return { ok: false, error: e?.message ?? 'Could not update product' };
   }
 }
 
