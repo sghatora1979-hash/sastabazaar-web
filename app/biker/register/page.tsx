@@ -10,10 +10,9 @@ import {
   maskAadhaar, maskPan, maskBank, maskUpiId,
   type BikerProfile, type DocType,
 } from '@/lib/delivery';
-import { OtpInput } from '@/components/delivery/OtpInput';
 import { DocUpload } from '@/components/delivery/DocUpload';
 import { ZonePicker, type ZoneValue } from '@/components/delivery/ZonePicker';
-import { DemoBadge, SoonBadge, BikerStatusBadge, fieldCls, labelCls, cardCls, primaryBtnCls, PageHero } from '@/components/delivery/DeliveryBadges';
+import { SoonBadge, BikerStatusBadge, fieldCls, labelCls, cardCls, primaryBtnCls, PageHero } from '@/components/delivery/DeliveryBadges';
 import { BRAND } from '@/components/store/ProductCard';
 
 const STEP_TITLES = ['About you', 'Licence & vehicle', 'KYC (private)', 'Service area', 'Payout & terms'];
@@ -31,7 +30,7 @@ function ageFromDob(dob: string): number | null {
 function LoginPrompt() {
   return (
     <div className="max-w-2xl mx-auto px-4">
-      <PageHero emoji="🛵" title="Biker registration" sub="Apply to become a SastaBazaar delivery partner." />
+      <PageHero emoji="🛵" title="Delivery partner registration" sub="Apply to become a SastaBazaar delivery partner." />
       <div className={`${cardCls} text-center`}>
         <p className="text-sm font-bold text-gray-800 mb-1">Please log in first</p>
         <p className="text-xs text-gray-500 mb-4">Bikers use their normal SastaBazaar account (email OTP).</p>
@@ -65,7 +64,7 @@ export default function BikerRegisterPage() {
     return (
       <div className="min-h-screen bg-[#FFF9EC] pb-24 pt-2">
         <div className="max-w-2xl mx-auto px-4">
-          <PageHero emoji="🛵" title="Biker registration" sub="" />
+          <PageHero emoji="🛵" title="Delivery partner registration" sub="" />
           <div className={`${cardCls} text-center text-sm text-gray-600`}>Backend not configured — registration is unavailable right now.</div>
         </div>
       </div>
@@ -126,6 +125,7 @@ export default function BikerRegisterPage() {
 /* Multi-step form                                                     */
 /* ------------------------------------------------------------------ */
 function RegisterForm({ prefill }: { prefill: BikerProfile | null }) {
+  const { user } = useAuth(); // email OTP identity — page already requires login
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
@@ -134,14 +134,9 @@ function RegisterForm({ prefill }: { prefill: BikerProfile | null }) {
   // Step 1 — About you
   const [fullName, setFullName] = useState(prefill?.full_name ?? '');
   const [phone, setPhone] = useState(prefill?.phone ?? '');
-  const [email, setEmail] = useState(prefill?.email ?? '');
+  const [email, setEmail] = useState(prefill?.email ?? user?.email ?? '');
   const [dob, setDob] = useState(prefill?.dob ?? '');
   const [photoPath, setPhotoPath] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
-  const [demoCode, setDemoCode] = useState('');
-  const [otpValue, setOtpValue] = useState('');
-  const [phoneVerified, setPhoneVerified] = useState(false);
-  const [otpError, setOtpError] = useState('');
 
   // Step 2 — Licence & vehicle
   const [dlNumber, setDlNumber] = useState('');
@@ -176,25 +171,10 @@ function RegisterForm({ prefill }: { prefill: BikerProfile | null }) {
   const [emPhone, setEmPhone] = useState(prefill?.emergency_phone ?? '');
   const [terms, setTerms] = useState(false);
 
-  const sendDemoCode = () => {
-    if (phone.replace(/\D/g, '').length !== 10) { setOtpError('Enter a valid 10-digit phone number first.'); return; }
-    const code = String(Math.floor(100000 + Math.random() * 900000));
-    setDemoCode(code);
-    setOtpSent(true);
-    setOtpValue('');
-    setOtpError('');
-  };
-
-  const verifyDemoCode = () => {
-    if (otpValue === demoCode) { setPhoneVerified(true); setOtpError(''); }
-    else setOtpError('Wrong code — try again.');
-  };
-
   const stepErrors = (s: number): string => {
     if (s === 0) {
       if (!fullName.trim()) return 'Please enter your full name.';
-      if (phone.replace(/\D/g, '').length !== 10) return 'Phone must be exactly 10 digits.';
-      if (!phoneVerified) return 'Please verify your phone with the demo code.';
+      if (phone && phone.replace(/\D/g, '').length !== 10) return 'Phone must be exactly 10 digits.';
       if (dob) {
         const age = ageFromDob(dob);
         if (age === null) return 'Enter a valid date of birth.';
@@ -350,25 +330,10 @@ function RegisterForm({ prefill }: { prefill: BikerProfile | null }) {
               <input className={fieldCls} value={fullName} onChange={e => setFullName(e.target.value)} placeholder="As on your licence" />
             </div>
             <div>
-              <label className={labelCls}>Phone (10 digits) *</label>
-              <div className="flex gap-2">
-                <input className={fieldCls} inputMode="numeric" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} placeholder="98765 43210" disabled={phoneVerified} />
-                {!phoneVerified && <button type="button" onClick={sendDemoCode} className="px-4 rounded-xl text-white text-sm font-bold shrink-0" style={{ background: BRAND }}>Send code</button>}
-              </div>
-              {phoneVerified && <p className="text-xs text-green-700 font-bold mt-1">✓ Phone verified</p>}
+              <label className={labelCls}>Phone (10 digits) <span className="font-normal text-gray-400">— optional</span></label>
+              <input className={fieldCls} inputMode="numeric" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} placeholder="98765 43210" />
+              <p className="text-[11px] text-gray-500 mt-1">Your email login (verified by OTP) is your identity — phone is optional.</p>
             </div>
-            {otpSent && !phoneVerified && (
-              <div className="p-3 rounded-xl bg-amber-50 border border-amber-200">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <DemoBadge />
-                  <span className="text-xs font-bold text-gray-800">Demo code: <span className="text-base tracking-widest">{demoCode}</span></span>
-                </div>
-                <p className="text-[11px] text-gray-500 mt-1">Demo code — no real SMS is sent (SMS provider not configured).</p>
-                <div className="mt-2"><OtpInput value={otpValue} onChange={setOtpValue} /></div>
-                <button type="button" onClick={verifyDemoCode} className="mt-2 px-4 py-2 rounded-xl text-white text-sm font-bold" style={{ background: BRAND }}>Verify</button>
-                {otpError && <p className="text-xs text-red-600 font-bold mt-1">{otpError}</p>}
-              </div>
-            )}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className={labelCls}>Email</label>
@@ -397,6 +362,9 @@ function RegisterForm({ prefill }: { prefill: BikerProfile | null }) {
                 <option value="bike">Bike (petrol)</option>
                 <option value="scooter">Scooter</option>
                 <option value="ev_bike">EV bike / scooter</option>
+                <option value="tempo">Tempo</option>
+                <option value="mini_truck">Mini truck</option>
+                <option value="truck">Truck</option>
               </select>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

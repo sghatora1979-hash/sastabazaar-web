@@ -2,8 +2,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Phone, KeyRound, ArrowRight, CheckCircle2, MapPin, Store, Camera, PartyPopper } from 'lucide-react';
-import { sendOtp, verifyOtp, getSellerByPhone, saveSeller, setSessionSeller, ensureSeed, Seller } from '@/lib/seller';
+import { Phone, Mail, KeyRound, ArrowRight, CheckCircle2, MapPin, Store, Camera, PartyPopper } from 'lucide-react';
+import { ensureSeed } from '@/lib/seller';
 import { STATES } from '@/lib/festivals';
 import { useAuth } from '@/lib/auth';
 import { applyAsSeller, getMySeller } from '@/lib/db/shop';
@@ -28,16 +28,16 @@ function downscaleImage(file: File, maxDim = 640): Promise<string> {
   });
 }
 
-const STEP_LABELS = ['Phone', 'Your shop', 'Start selling'];
+const STEP_LABELS = ['Email', 'Your shop', 'Start selling'];
 
 export default function SellerRegister() {
   const router = useRouter();
-  const { ready, user, configured } = useAuth();
-  const realMode = !!(ready && user && configured); // logged in -> real DB application
+  const { ready, user, configured, sendOtp, verifyOtp } = useAuth();
+  const realMode = !!(ready && user && configured); // logged in via email OTP -> real DB application
   const [step, setStep] = useState(1);
-  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState(''); // optional shop phone
   const [otpSent, setOtpSent] = useState(false);
-  const [demoCode, setDemoCode] = useState('');
   const [code, setCode] = useState('');
   const [shopName, setShopName] = useState('');
   const [state, setState] = useState('UP');
@@ -53,7 +53,7 @@ export default function SellerRegister() {
 
   useEffect(() => {
     ensureSeed();
-    // Logged-in sellers skip the demo phone step — their email login is the identity.
+    // Logged-in sellers (email OTP verified) skip the email step — their login is the identity.
     if (realMode) {
       setStep(2);
       getMySeller().then(s => {
@@ -64,17 +64,24 @@ export default function SellerRegister() {
     }
   }, [realMode]);
 
-  const startOtp = () => {
+  const startOtp = async () => {
     setError('');
-    if (phone.trim().replace(/\D/g, '').length < 10) { setError('Please enter a valid phone number.'); return; }
-    if (getSellerByPhone(phone.trim())) { setError('This phone number is already registered. Please login.'); return; }
-    setDemoCode(sendOtp(phone.trim()));
+    const em = email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) { setError('Please enter a valid email address.'); return; }
+    setBusy(true);
+    const r = await sendOtp(em);
+    setBusy(false);
+    if (!r.ok) { setError(r.error ?? 'Could not send OTP. Try again.'); return; }
     setOtpSent(true);
   };
 
-  const verifyPhone = () => {
+  const verifyEmail = async () => {
     setError('');
-    if (!verifyOtp(phone.trim(), code)) { setError('Wrong or expired OTP. Try again.'); return; }
+    if (code.trim().length < 6) { setError('Enter the 6-digit code from your email.'); return; }
+    setBusy(true);
+    const r = await verifyOtp(email.trim().toLowerCase(), code.trim());
+    setBusy(false);
+    if (!r.ok) { setError(r.error ?? 'Wrong or expired code. Try again.'); return; }
     setStep(2);
   };
 
@@ -89,43 +96,27 @@ export default function SellerRegister() {
 
   const finish = () => {
     setError('');
+    if (!realMode || !user) { setError('Please verify your email first.'); setStep(1); return; }
     if (shopName.trim().length < 2) { setError('Please enter your shop name.'); return; }
     if (address.trim().length < 5) { setError('Please enter your shop address.'); return; }
     if (city.trim().length < 2) { setError('Please enter your city.'); return; }
     if (!/^\d{6}$/.test(pin.trim())) { setError('Please enter a valid 6-digit PIN code.'); return; }
-    if (realMode) {
-      // Real application -> Supabase sellers table (status 'pending', admin approves).
-      setBusy(true);
-      applyAsSeller({
-        business_name: shopName.trim(),
-        phone: phone.trim() || user?.email || '',
-        address: address.trim(),
-        area: area.trim() || undefined,
-        city: city.trim(),
-        pin: pin.trim(),
-        state,
-      }).then(r => {
-        setBusy(false);
-        if (r.ok) { setApplied(true); setStep(3); }
-        else setError(r.error ?? 'Application failed. Please try again.');
-      });
-      return;
-    }
-    const seller: Seller = {
-      id: `seller-${Date.now().toString(36)}`,
-      name: shopName.trim(),
-      email: '',
-      phone: phone.trim(),
+    if (phone.trim() && phone.trim().replace(/\D/g, '').length < 10) { setError('Phone number looks too short.'); return; }
+    // Real application -> Supabase sellers table (status 'pending', admin approves).
+    setBusy(true);
+    applyAsSeller({
+      business_name: shopName.trim(),
+      phone: phone.trim() || user.email || '',
+      address: address.trim(),
+      area: area.trim() || undefined,
+      city: city.trim(),
+      pin: pin.trim(),
       state,
-      kycStatus: 'none',
-      express: true,
-      shopName: shopName.trim(),
-      photo,
-      createdAt: new Date().toISOString(),
-    };
-    saveSeller(seller);
-    setSessionSeller(seller.id);
-    setStep(3);
+    }).then(r => {
+      setBusy(false);
+      if (r.ok) { setApplied(true); setStep(3); }
+      else setError(r.error ?? 'Application failed. Please try again.');
+    });
   };
 
   return (
@@ -152,39 +143,42 @@ export default function SellerRegister() {
 
         {step === 1 && (
           <div className="space-y-4">
-            {!otpSent ? (
+            {ready && !configured ? (
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-800">
+                Registration is unavailable right now — the backend is not configured. Please try again later.
+              </div>
+            ) : !otpSent ? (
               <>
                 <label className="block">
-                  <span className="text-sm font-semibold text-gray-700">Your mobile number</span>
+                  <span className="text-sm font-semibold text-gray-700">Your email address</span>
                   <div className="relative mt-1">
-                    <Phone size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="+91 98765 43210" inputMode="tel"
+                    <Mail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" inputMode="email" type="email"
                       className="w-full pl-10 pr-4 py-3 bg-gray-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40" />
                   </div>
                 </label>
+                <p className="text-xs text-gray-500">We&apos;ll send a free sign-in link + 6-digit code to your email — no SMS charges, no WhatsApp needed. Phone number is optional later.</p>
                 {error && <p className="text-sm text-red-600">{error}</p>}
-                <button onClick={startOtp} className="btn-primary w-full font-bold py-3.5 rounded-2xl inline-flex items-center justify-center gap-2">
-                  Send OTP <ArrowRight size={18} />
+                <button onClick={startOtp} disabled={busy} className="btn-primary w-full font-bold py-3.5 rounded-2xl inline-flex items-center justify-center gap-2 disabled:opacity-60">
+                  {busy ? 'Sending…' : 'Send OTP'} <ArrowRight size={18} />
                 </button>
               </>
             ) : (
               <>
-                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-800">
-                  <span className="font-bold">Demo mode:</span> OTP sent to {phone} is{' '}
-                  <span className="font-black text-lg tracking-widest">{demoCode}</span>
-                  <div className="text-xs mt-1">Real launch needs an SMS gateway connected to your account.</div>
+                <div className="bg-green-50 border border-green-200 rounded-2xl p-4 text-sm text-green-800">
+                  Sign-in link sent to <span className="font-bold">{email}</span> — tap the link in your email, or enter the 6-digit code below.
                 </div>
                 <label className="block">
                   <span className="text-sm font-semibold text-gray-700">Enter OTP</span>
                   <div className="relative mt-1">
                     <KeyRound size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input value={code} onChange={e => setCode(e.target.value)} placeholder="6-digit code" inputMode="numeric" maxLength={6}
+                    <input value={code} onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="6-digit code" inputMode="numeric" maxLength={6}
                       className="w-full pl-10 pr-4 py-3 bg-gray-100 rounded-2xl text-sm tracking-widest font-bold focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40" />
                   </div>
                 </label>
                 {error && <p className="text-sm text-red-600">{error}</p>}
-                <button onClick={verifyPhone} className="btn-primary w-full font-bold py-3.5 rounded-2xl">Verify & Continue</button>
-                <button onClick={() => { setOtpSent(false); setCode(''); }} className="w-full text-sm text-gray-500">Use a different number</button>
+                <button onClick={verifyEmail} disabled={busy} className="btn-primary w-full font-bold py-3.5 rounded-2xl disabled:opacity-60">{busy ? 'Verifying…' : 'Verify & Continue'}</button>
+                <button onClick={() => { setOtpSent(false); setCode(''); setError(''); }} className="w-full text-sm text-gray-500">Use a different email</button>
               </>
             )}
           </div>
@@ -234,6 +228,14 @@ export default function SellerRegister() {
                   {STATES.map(st => <option key={st.code} value={st.code}>{st.name}</option>)}
                 </select>
               </label>
+            </div>
+            <div>
+              <span className="text-sm font-semibold text-gray-700">Shop phone <span className="font-normal text-gray-400">(optional)</span></span>
+              <div className="relative mt-1">
+                <Phone size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="+91 98765 43210" inputMode="tel"
+                  className="w-full pl-10 pr-4 py-3 bg-gray-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40" />
+              </div>
             </div>
             <div>
               <span className="text-sm font-semibold text-gray-700">Shop photo <span className="font-normal text-gray-400">(optional)</span></span>

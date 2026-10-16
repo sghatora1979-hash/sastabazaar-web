@@ -38,7 +38,7 @@ function LoginCard() {
     setBusy(true); setMsg('');
     const r = await sendOtp(email);
     setBusy(false);
-    if (r.ok) { setCodeSent(true); setMsg('Code sent! Check your email (and spam folder).'); }
+    if (r.ok) { setCodeSent(true); setMsg('Sent! Tap the sign-in link in your email, or enter the 6-digit code below.'); }
     else setMsg(r.error ?? 'Could not send code.');
   };
 
@@ -70,7 +70,7 @@ function LoginCard() {
       <div className="flex items-center gap-2 font-bold text-gray-900 mb-1">
         <Mail size={18} className="text-[var(--primary)]" /> Login
       </div>
-      <p className="text-xs text-gray-500 mb-3">We email you a 6-digit code — no password to remember.</p>
+      <p className="text-xs text-gray-500 mb-3">We email you a sign-in link + 6-digit code — no password to remember.</p>
       {!codeSent ? (
         <>
           <input
@@ -80,7 +80,7 @@ function LoginCard() {
           />
           <motion.button whileTap={{ scale: 0.97 }} onClick={doSend} disabled={busy}
             className="btn-primary mt-3 w-full font-bold py-2.5 rounded-xl text-sm disabled:opacity-50">
-            {busy ? 'Sending…' : 'Send login code'}
+            {busy ? 'Sending…' : 'Send login link'}
           </motion.button>
         </>
       ) : (

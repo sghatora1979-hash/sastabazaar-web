@@ -9,7 +9,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';import { useRouter } from 'next/navigation';
 import {
   Package, ShoppingBag, Plus, Trash2, LogOut, X, ImagePlus,
-  CheckCircle2, Truck, Store,
+  CheckCircle2, Truck, Store, Pencil,
 } from 'lucide-react';
 import { CATEGORIES } from '@/lib/categories';
 import {
@@ -21,7 +21,7 @@ import type { Product } from '@/lib/products';
 import {
   getMySellerProducts, createSellerProductDb, deleteSellerProductDb,
   getMySellerOrderLines, setOrderStatusDb, uploadProductImage,
-  setProductPromosDb,
+  setProductPromosDb, updateSellerProductDb,
   type MySeller, type SellerOrderLine, type NewDbProduct,
 } from '@/lib/db/shop';
 
@@ -59,6 +59,20 @@ export function DbDashboard({ seller, onLogout }: { seller: MySeller; onLogout: 
   const [formError, setFormError] = useState('');
   const [saving, setSaving] = useState(false);
   const [tracking, setTracking] = useState<Record<string, string>>({});
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  // Update 25 — optional variant fields (size template, sizes, colors, weight, dimensions)
+  const [sizeTemplate, setSizeTemplate] = useState('');
+  const [sizes, setSizes] = useState<string[]>([]);
+  const [customSize, setCustomSize] = useState('');
+  const [colors, setColors] = useState<string[]>([]);
+  const [customColor, setCustomColor] = useState('');
+  const [weight, setWeight] = useState('');
+  const [dimL, setDimL] = useState('');
+  const [dimW, setDimW] = useState('');
+  const [dimH, setDimH] = useState('');
+  const [showVariants, setShowVariants] = useState(false);
+  const [subcategory, setSubcategory] = useState('');
 
   const reload = () => {
     setLoading(true);
@@ -81,6 +95,33 @@ export function DbDashboard({ seller, onLogout }: { seller: MySeller; onLogout: 
   const resetForm = () => {
     setTitle(''); setTitleHi(''); setPrice(''); setMrp(''); setStock('10');
     setCondition('new'); setPromos([]); setPhotos([]); setDescription('');
+    setSizeTemplate(''); setSizes([]); setCustomSize('');
+    setColors([]); setCustomColor('');
+    setWeight(''); setDimL(''); setDimW(''); setDimH('');
+    setShowVariants(false); setEditingId(null); setSubcategory('');
+  };
+
+  const startEdit = (prod: Product) => {
+    resetForm();
+    setEditingId(prod.id);
+    setTitle(prod.title); setTitleHi(prod.titleHi === prod.title ? '' : prod.titleHi);
+    setPrice(String(prod.price)); setMrp(String(prod.mrp)); setStock(String(prod.stock));
+    const catSlug = CATEGORIES.find(c => c.id === prod.categoryId)?.slug;
+    if (catSlug) setCat(catSlug);
+    setSubcategory(prod.subcategory ?? '');
+    setPhotos(prod.images ?? []);
+    setDescription(prod.description ?? '');
+    setPromos((prod.promoteIn ?? []) as PromoKind[]);
+    setSizeTemplate(prod.sizeTemplate ?? '');
+    setSizes(prod.sizes ?? []);
+    setColors(prod.colors ?? []);
+    setWeight(prod.weightKg != null ? String(prod.weightKg) : '');
+    const dims = (prod.dimensionsCm ?? '').split('×').map(s => s.trim());
+    if (dims.length === 3) { setDimL(dims[0]); setDimW(dims[1]); setDimH(dims[2]); }
+    if ((prod.sizes?.length ?? 0) + (prod.colors?.length ?? 0) > 0 || prod.weightKg != null || prod.dimensionsCm) {
+      setShowVariants(true);
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const buildInput = (): NewDbProduct | null => {
@@ -88,11 +129,18 @@ export function DbDashboard({ seller, onLogout }: { seller: MySeller; onLogout: 
     const p = Number(price), m = Number(mrp || price), st = Number(stock);
     if (title.trim().length < 3) { setFormError('Enter a product title.'); return null; }
     if (!p || p <= 0) { setFormError('Enter a valid selling price.'); return null; }
+    const dims = [dimL.trim(), dimW.trim(), dimH.trim()];
     return {
       title: title.trim(), titleHi: titleHi.trim() || undefined,
       description: description.trim() || undefined,
       price: p, mrp: m >= p ? m : p, categorySlug: cat,
       image: photos[0], images: photos, stock: st > 0 ? st : 1, condition,
+      sizes: sizes.length ? sizes : undefined,
+      colors: colors.length ? colors : undefined,
+      weightKg: weight.trim() && Number(weight) > 0 ? Number(weight) : undefined,
+      dimensionsCm: dims.every(d => d) ? dims.join(' × ') : undefined,
+      sizeTemplate: sizeTemplate || undefined,
+      subcategory: subcategory || undefined,
     };
   };
 
@@ -101,6 +149,14 @@ export function DbDashboard({ seller, onLogout }: { seller: MySeller; onLogout: 
     if (!input) return;
     setSaving(true);
     try {
+      if (editingId) {
+        // Edit mode — update the seller's own product.
+        const res = await updateSellerProductDb(editingId, seller.id, input);
+        if (!res.ok) { setFormError(res.error ?? 'Could not update product.'); return; }
+        resetForm();
+        reload();
+        return;
+      }
       // Upload photos to Supabase Storage so the DB stays light.
       const urls = await Promise.all((input.images ?? []).map(uploadProductImage));
       const res = await createSellerProductDb(seller.id, {
@@ -222,7 +278,9 @@ export function DbDashboard({ seller, onLogout }: { seller: MySeller; onLogout: 
             <div className="grid lg:grid-cols-3 gap-6">
               <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
                 className="bg-white rounded-3xl border border-gray-100 shadow-md p-6 h-fit">
-                <h2 className="font-extrabold text-lg text-gray-900 flex items-center gap-2"><Plus size={18} /> Add Product</h2>
+                <h2 className="font-extrabold text-lg text-gray-900 flex items-center gap-2">
+                  {editingId ? <Pencil size={18} /> : <Plus size={18} />} {editingId ? 'Edit Product' : 'Add Product'}
+                </h2>
                 <div className="mt-4 space-y-3">
                   <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Product title"
                     className="w-full px-4 py-3 bg-gray-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40" />
@@ -257,13 +315,23 @@ export function DbDashboard({ seller, onLogout }: { seller: MySeller; onLogout: 
                       className="w-full px-4 py-3 bg-gray-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40" />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
-                    <select value={cat} onChange={e => setCat(e.target.value)}
+                    <select value={cat} onChange={e => { setCat(e.target.value); setSubcategory(''); }}
                       className="w-full px-4 py-3 bg-gray-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40">
                       {CATEGORIES.map(c => <option key={c.slug} value={c.slug}>{c.nameHi} · {c.name}</option>)}
                     </select>
                     <input value={stock} onChange={e => setStock(e.target.value)} placeholder="Stock" inputMode="numeric"
                       className="w-full px-4 py-3 bg-gray-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40" />
                   </div>
+                  {(() => {
+                    const subs = CATEGORIES.find(c => c.slug === cat)?.subcategories ?? [];
+                    return subs.length > 0 ? (
+                      <select value={subcategory} onChange={e => setSubcategory(e.target.value)}
+                        className="w-full px-4 py-3 bg-gray-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40">
+                        <option value="">Subcategory (optional) — e.g. {subs[0]}</option>
+                        {subs.map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    ) : null;
+                  })()}
                   <div className="flex gap-2">
                     {CONDITIONS.map(c => (
                       <button key={c} onClick={() => setCondition(c)}
@@ -285,11 +353,117 @@ export function DbDashboard({ seller, onLogout }: { seller: MySeller; onLogout: 
                   </div>
                   <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Description (optional)" rows={3}
                     className="w-full px-4 py-3 bg-gray-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40" />
+                  {/* Update 25 — optional size / color / weight / dimensions */}
+                  <div className="border border-gray-200 rounded-2xl overflow-hidden">
+                    <button onClick={() => setShowVariants(v => !v)}
+                      className="w-full px-4 py-3 flex items-center justify-between text-sm font-bold text-gray-700 bg-gray-50 hover:bg-gray-100">
+                      <span>📐 Size, colour, weight <span className="font-normal text-gray-400">(optional)</span></span>
+                      <span className="text-gray-400">{showVariants ? '▲' : '▼'}</span>
+                    </button>
+                    {showVariants && (
+                      <div className="p-4 space-y-3 bg-white">
+                        <div>
+                          <span className="text-xs font-bold text-gray-500">Size template</span>
+                          <div className="flex gap-2 mt-1">
+                            {[
+                              { id: '', label: 'No sizes' },
+                              { id: 'clothing', label: 'Clothing' },
+                              { id: 'footwear', label: 'Footwear' },
+                              { id: 'custom', label: 'Custom' },
+                            ].map(t => (
+                              <button key={t.id} onClick={() => { setSizeTemplate(t.id); setSizes([]); }}
+                                className={`flex-1 py-2 rounded-xl text-xs font-bold border-2 ${sizeTemplate === t.id ? 'border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--primary)]' : 'border-gray-200 text-gray-500'}`}>
+                                {t.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        {sizeTemplate === 'clothing' && (
+                          <div className="flex flex-wrap gap-1.5">
+                            {['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'].map(s => (
+                              <button key={s} onClick={() => setSizes(sizes.includes(s) ? sizes.filter(x => x !== s) : [...sizes, s])}
+                                className={`text-xs font-bold px-3 py-1.5 rounded-full border-2 ${sizes.includes(s) ? 'border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--primary)]' : 'border-gray-200 text-gray-500'}`}>
+                                {s}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        {sizeTemplate === 'footwear' && (
+                          <div className="flex flex-wrap gap-1.5">
+                            {['UK 5', 'UK 6', 'UK 7', 'UK 8', 'UK 9', 'UK 10', 'UK 11'].map(s => (
+                              <button key={s} onClick={() => setSizes(sizes.includes(s) ? sizes.filter(x => x !== s) : [...sizes, s])}
+                                className={`text-xs font-bold px-3 py-1.5 rounded-full border-2 ${sizes.includes(s) ? 'border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--primary)]' : 'border-gray-200 text-gray-500'}`}>
+                                {s}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        {sizeTemplate === 'custom' && (
+                          <div className="flex gap-2">
+                            <input value={customSize} onChange={e => setCustomSize(e.target.value)} placeholder="e.g. 42 inch, 500g pack"
+                              className="flex-1 px-4 py-2.5 bg-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40" />
+                            <button onClick={() => { const v = customSize.trim(); if (v && !sizes.includes(v)) setSizes([...sizes, v]); setCustomSize(''); }}
+                              className="px-4 py-2.5 rounded-xl bg-gray-900 text-white text-sm font-bold">Add</button>
+                          </div>
+                        )}
+                        {sizes.length > 0 && sizeTemplate === 'custom' && (
+                          <div className="flex flex-wrap gap-1.5">
+                            {sizes.map(s => (
+                              <span key={s} className="text-xs font-bold px-3 py-1.5 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] flex items-center gap-1">
+                                {s}
+                                <button onClick={() => setSizes(sizes.filter(x => x !== s))} className="font-black" aria-label={`Remove ${s}`}>×</button>
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        <div>
+                          <span className="text-xs font-bold text-gray-500">Colours</span>
+                          <div className="flex flex-wrap gap-1.5 mt-1">
+                            {['Red', 'Blue', 'Green', 'Black', 'White', 'Yellow', 'Pink', 'Orange', 'Purple', 'Brown', 'Grey', 'Maroon', 'Navy', 'Beige', 'Multicolour'].map(c => (
+                              <button key={c} onClick={() => setColors(colors.includes(c) ? colors.filter(x => x !== c) : [...colors, c])}
+                                className={`text-[11px] font-bold px-2.5 py-1.5 rounded-full border-2 ${colors.includes(c) ? 'border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--primary)]' : 'border-gray-200 text-gray-500'}`}>
+                                {c}
+                              </button>
+                            ))}
+                          </div>
+                          <div className="flex gap-2 mt-2">
+                            <input value={customColor} onChange={e => setCustomColor(e.target.value)} placeholder="Custom colour"
+                              className="flex-1 px-4 py-2.5 bg-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40" />
+                            <button onClick={() => { const v = customColor.trim(); if (v && !colors.includes(v)) setColors([...colors, v]); setCustomColor(''); }}
+                              className="px-4 py-2.5 rounded-xl bg-gray-900 text-white text-sm font-bold">Add</button>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <span className="text-xs font-bold text-gray-500">Weight (kg)</span>
+                            <input value={weight} onChange={e => setWeight(e.target.value.replace(/[^0-9.]/g, ''))} placeholder="e.g. 1.5" inputMode="decimal"
+                              className="mt-1 w-full px-4 py-2.5 bg-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40" />
+                          </div>
+                          <div>
+                            <span className="text-xs font-bold text-gray-500">Dimensions L × W × H (cm)</span>
+                            <div className="flex gap-1.5 mt-1">
+                              <input value={dimL} onChange={e => setDimL(e.target.value.replace(/[^0-9.]/g, ''))} placeholder="L" inputMode="decimal"
+                                className="w-full px-3 py-2.5 bg-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40" />
+                              <input value={dimW} onChange={e => setDimW(e.target.value.replace(/[^0-9.]/g, ''))} placeholder="W" inputMode="decimal"
+                                className="w-full px-3 py-2.5 bg-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40" />
+                              <input value={dimH} onChange={e => setDimH(e.target.value.replace(/[^0-9.]/g, ''))} placeholder="H" inputMode="decimal"
+                                className="w-full px-3 py-2.5 bg-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40" />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   {formError && <p className="text-sm text-red-600">{formError}</p>}
                   <button onClick={addProduct} disabled={saving}
                     className="btn-primary w-full font-bold py-3.5 rounded-2xl disabled:opacity-60">
-                    {saving ? 'Adding…' : 'Add Product — goes live instantly'}
+                    {saving ? (editingId ? 'Saving…' : 'Adding…') : editingId ? 'Save changes' : 'Add Product — goes live instantly'}
                   </button>
+                  {editingId && (
+                    <button onClick={resetForm} className="w-full text-sm text-gray-500 font-semibold py-2">
+                      Cancel edit
+                    </button>
+                  )}
                 </div>
               </motion.div>
 
@@ -322,6 +496,9 @@ export function DbDashboard({ seller, onLogout }: { seller: MySeller; onLogout: 
                         })}
                       </div>
                     </div>
+                    <button onClick={() => startEdit(p)} className="self-start p-2 text-blue-500 hover:text-blue-700" aria-label="Edit product">
+                      <Pencil size={18} />
+                    </button>
                     <button onClick={() => removeProduct(p.id)} className="self-start p-2 text-red-400 hover:text-red-600" aria-label="Remove product">
                       <Trash2 size={18} />
                     </button>

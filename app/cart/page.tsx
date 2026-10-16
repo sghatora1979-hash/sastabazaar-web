@@ -15,6 +15,7 @@ import {
 import { notifyNewOrder } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { getDbCart, setDbCartQty, placeDbOrder, saveAddressDb } from '@/lib/db/shop';
+import { STATES } from '@/lib/festivals';
 
 type Row = {
   id: string; title: string; titleHi?: string; price: number; mrp: number; image: string; href: string;
@@ -47,7 +48,11 @@ export default function CartPage() {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
+  const [addrLine2, setAddrLine2] = useState('');
+  const [landmark, setLandmark] = useState('');
   const [city, setCity] = useState('');
+  const [district, setDistrict] = useState('');
+  const [addrState, setAddrState] = useState('Punjab');
   const [pin, setPin] = useState('');
   const [formError, setFormError] = useState('');
 
@@ -139,8 +144,8 @@ export default function CartPage() {
     setFormError('');
     if (name.trim().length < 2) { setFormError('Please enter your name.'); return; }
     if (phone.trim().replace(/\D/g, '').length < 10) { setFormError('Please enter a valid phone number.'); return; }
-    if (address.trim().length < 10) { setFormError('Please enter your full delivery address.'); return; }
-    if (city.trim().length < 2) { setFormError('Please enter your city.'); return; }
+    if (address.trim().length < 5) { setFormError('Please enter house / shop number and street.'); return; }
+    if (city.trim().length < 2) { setFormError('Please enter your city / town.'); return; }
     if (!/^\d{6}$/.test(pin.trim())) { setFormError('Please enter a valid 6-digit PIN code.'); return; }
     setPaying(true);
     const key = `web-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
@@ -148,7 +153,12 @@ export default function CartPage() {
     // Save the delivery address first so the seller can fulfil the order.
     saveAddressDb({
       label: 'Home', line1: `${name.trim()} — ${address.trim()}`,
-      city: city.trim(), pin: pin.trim(), phone: phone.trim(),
+      line2: addrLine2.trim() || undefined,
+      landmark: landmark.trim() || undefined,
+      city: city.trim(),
+      district: district.trim() || undefined,
+      state: addrState,
+      pin: pin.trim(), phone: phone.trim(),
     }).then(addr => {
       if (!addr.ok || !addr.id) {
         setPaying(false);
@@ -342,11 +352,23 @@ export default function CartPage() {
                 className="w-full px-4 py-3 bg-gray-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40" />
               <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="Phone number" inputMode="tel"
                 className="w-full px-4 py-3 bg-gray-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40" />
-              <textarea value={address} onChange={e => setAddress(e.target.value)} placeholder="Full street address" rows={3}
+              <input value={address} onChange={e => setAddress(e.target.value)} placeholder="House / shop no., street, gali"
+                className="w-full px-4 py-3 bg-gray-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40" />
+              <input value={addrLine2} onChange={e => setAddrLine2(e.target.value)} placeholder="Mohalla / locality / area (optional)"
+                className="w-full px-4 py-3 bg-gray-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40" />
+              <input value={landmark} onChange={e => setLandmark(e.target.value)} placeholder="Landmark, e.g. near bus stand (optional)"
                 className="w-full px-4 py-3 bg-gray-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40" />
               <div className="grid grid-cols-2 gap-3">
-                <input value={city} onChange={e => setCity(e.target.value)} placeholder="City"
+                <input value={city} onChange={e => setCity(e.target.value)} placeholder="City / town"
                   className="w-full px-4 py-3 bg-gray-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40" />
+                <input value={district} onChange={e => setDistrict(e.target.value)} placeholder="District (optional)"
+                  className="w-full px-4 py-3 bg-gray-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <select value={addrState} onChange={e => setAddrState(e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40">
+                  {STATES.map(st => <option key={st.code} value={st.name}>{st.name}</option>)}
+                </select>
                 <input value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="PIN code" inputMode="numeric"
                   className="w-full px-4 py-3 bg-gray-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40" />
               </div>
@@ -367,7 +389,9 @@ export default function CartPage() {
                 server-verified prices. Payment is collected on delivery — online payments are coming soon.
               </div>
               <div className="text-sm text-gray-600 mb-4">
-                Deliver to: <b>{name}</b>, {phone}<br />{address}, {city} — {pin}
+                Deliver to: <b>{name}</b>, {phone}<br />
+                {address}{addrLine2 ? `, ${addrLine2}` : ''}{landmark ? `, near ${landmark}` : ''}<br />
+                {city}{district ? `, ${district}` : ''}, {addrState} — {pin}
               </div>
               {formError && <p className="text-sm text-red-600 mb-3">{formError}</p>}
               <div className="flex gap-3">
