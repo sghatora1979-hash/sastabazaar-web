@@ -104,7 +104,9 @@ export const FESTIVALS: Festival[] = [
 export function festivalDate(f: Festival, from: Date = new Date()): Date {
   const start = new Date(from.getFullYear(), from.getMonth(), from.getDate());
   let d = new Date(from.getFullYear(), f.month - 1, f.day);
-  if (d < start) d = new Date(from.getFullYear() + 1, f.month - 1, f.day);
+  // <= (not <): on the festival day itself the countdown target (midnight)
+  // has already passed, so roll to the NEXT festival instead of showing 00:00.
+  if (d <= start) d = new Date(from.getFullYear() + 1, f.month - 1, f.day);
   return d;
 }
 
