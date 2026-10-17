@@ -31,11 +31,13 @@ alter table public.sb_fee_schedules enable row level security;
 
 -- Everyone (sellers included) can READ the fee schedule — transparency rule:
 -- the seller must see all fees BEFORE listing or accepting an order.
+drop policy if exists "fee_schedules read all" on public.sb_fee_schedules;
 create policy "fee_schedules read all"
   on public.sb_fee_schedules for select
   using (true);
 
 -- Only platform admin can change rates.
+drop policy if exists "fee_schedules admin write" on public.sb_fee_schedules;
 create policy "fee_schedules admin write"
   on public.sb_fee_schedules for all
   using (public.is_platform_admin())
