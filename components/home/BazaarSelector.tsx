@@ -1,10 +1,14 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import { getProductsBySection, getProductsByCategory, Product, Section } from '@/lib/products';
+import { ProductCard } from '@/components/store/ProductCard';
 
 /** Update 26: Books bazaar added; every card expands inline to show its
- *  categories (no full-page jump needed to browse). */
+ *  categories (no full-page jump needed to browse).
+ *  Update 27: tapping a card now opens its ITEMS inline below (mobile-app
+ *  style accordion) — Naya shows new items, Purana shows old items, etc. */
 const BAZAARS = [
   {
     id: 'naya', label: 'नया बाज़ार', sub: 'Brand New', icon: '🆕', color: '#0B3D91',
@@ -38,6 +42,37 @@ const BAZAARS = [
   },
 ];
 
+/** Update 27: inline product strip — mobile-app style. Tap a bazaar card
+ *  and its items open right below (no page change). */
+function BazaarItems({ bazaarId, href, label }: { bazaarId: string; href: string; label: string }) {
+  const [items, setItems] = useState<Product[]>([]);
+  useEffect(() => {
+    const list = bazaarId === 'books'
+      ? getProductsByCategory('10', undefined, 10)
+      : getProductsBySection(bazaarId as Section, 10);
+    setItems(list);
+  }, [bazaarId]);
+
+  if (items.length === 0) return null;
+  return (
+    <div className="mt-5">
+      <div className="flex gap-3 overflow-x-auto pb-3 snap-x snap-mandatory scrollbar-thin">
+        {items.map((p) => (
+          <div key={p.id} className="w-36 sm:w-44 shrink-0 snap-start">
+            <ProductCard product={p} />
+          </div>
+        ))}
+      </div>
+      <Link
+        href={href}
+        className="mt-2 inline-flex items-center gap-1 text-sm font-extrabold text-white underline underline-offset-4"
+      >
+        VIEW ALL {label} →
+      </Link>
+    </div>
+  );
+}
+
 export function BazaarSelector() {
   const [open, setOpen] = useState<string | null>(null);
 
@@ -47,7 +82,7 @@ export function BazaarSelector() {
         <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900">
           पाँच बाज़ार, एक जगह
         </h2>
-        <p className="text-gray-500 mt-2">Five bazaars. One destination. Tap a card to see categories inside.</p>
+        <p className="text-gray-500 mt-2">Five bazaars. One destination. Tap a card — items open right below, like a mobile app.</p>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-6">
@@ -78,7 +113,7 @@ export function BazaarSelector() {
                 <p className="text-sm opacity-90 mt-1">{b.sub}</p>
                 <p className="hidden sm:block text-xs opacity-80 mt-2 leading-snug">{b.desc}</p>
                 <div className="mt-4 text-sm font-bold inline-flex items-center gap-2">
-                  {isOpen ? 'CLOSE ✕' : 'CATEGORIES ▾'}
+                  {isOpen ? 'CLOSE ✕' : 'ITEMS ▾'}
                 </div>
               </button>
 
@@ -103,12 +138,8 @@ export function BazaarSelector() {
                           </Link>
                         ))}
                       </div>
-                      <Link
-                        href={b.href}
-                        className="mt-4 inline-flex items-center gap-1 text-sm font-extrabold text-white underline underline-offset-4"
-                      >
-                        SHOP ALL {b.label} →
-                      </Link>
+                      {/* Update 27: items open inline, mobile-app style */}
+                      <BazaarItems bazaarId={b.id} href={b.href} label={b.label} />
                     </div>
                   </motion.div>
                 )}
