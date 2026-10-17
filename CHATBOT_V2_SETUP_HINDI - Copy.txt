@@ -1,0 +1,135 @@
+============================================================
+  SASTA SAHAYAK AI (Chatbot v2) — SETUP GUIDE (Hindi)
+============================================================
+Ye guide bilkul step-by-step hai. Ek step karo, phir agla.
+Kahin drag-and-drop nahi hai — sirf click.
+
+------------------------------------------------------------
+STEP 1: ZIP DOWNLOAD KARO (laptop par)
+------------------------------------------------------------
+1. Email kholo (jisme zip ka link aaya hai).
+2. Link par CLICK karo — file download honi shuru hogi.
+3. Download poora hone do.
+
+------------------------------------------------------------
+STEP 2: ZIP KO KHOLO (Extract)
+------------------------------------------------------------
+1. Downloads folder me "SastaBazaar-Chatbot-v2.zip" dhoondo.
+2. Us par RIGHT-CLICK karo.
+3. "Extract All..." par CLICK karo.
+4. "Extract" button dabao.
+5. Ek naya folder banega — uske andar 4 cheezen hongi:
+   - components/sasta-chatbot/SastaChatbot.tsx
+   - components/sasta-chatbot/sahayak-kb.ts
+   - app/api/sahayak/route.ts
+   - README.txt
+
+------------------------------------------------------------
+STEP 3: GITHUB ME FILES DALO
+------------------------------------------------------------
+1. github.com kholo aur login karo.
+2. Apna SastaBazaar wala repo kholo.
+3. Upar "Add file" button par CLICK karo.
+4. "Upload files" par CLICK karo.
+5. "Choose your files" par CLICK karo.
+6. Extract kiye hue folder me jao aur ye 3 files select karo:
+   - SastaChatbot.tsx
+   - sahayak-kb.ts
+   - route.ts
+   (Teeno ko ek saath select kar sakte ho: pehli par click,
+   phir Ctrl dabaye rakh kar baaki do par click.)
+7. IMPORTANT: GitHub me sahi folder me dalna hai.
+   - SastaChatbot.tsx aur sahayak-kb.ts ko is path par dalo:
+     components/sasta-chatbot/
+     (GitHub me folder kholo, phir wahan upload karo.
+     Agar file pehle se hai to REPLACE/overwrite kar do —
+     SastaChatbot.tsx purani wali ki jagah nayi wali aayegi.)
+   - route.ts ko is path par dalo:
+     app/api/sahayak/
+     (Agar "sahayak" naam ka folder nahi hai to pehle banao:
+     "Add file" → "Create new file" → naam likho
+     app/api/sahayak/route.ts → neeche se file ka content
+     copy-paste karke Commit karo. Ya folder banao phir
+     upload karo.)
+8. Neeche hare "Commit changes" button par CLICK karo.
+9. Bas! Vercel apne aap ~2 minute me nayi site bana dega.
+   Kuch aur dabane ki zaroorat nahi.
+
+------------------------------------------------------------
+STEP 4: FREE GEMINI API KEY LO (AI dimag ke liye)
+------------------------------------------------------------
+Bina is key ke chatbot "basic mode" me chalega (kaam karega,
+par smart jawab nahi dega). Key FREE hai.
+1. Browser me kholo: aistudio.google.com
+2. Google se login karo (wahi email jo hamesha use karte ho).
+3. "Get API Key" par CLICK karo.
+4. "Create API Key" par CLICK karo.
+5. Key copy kar lo (lambe aksharon wali line).
+   NOTE: Ye key kisi ko mat bhejo, WhatsApp par mat dalo.
+
+------------------------------------------------------------
+STEP 5: KEY KO NOTEPAD ME SAFE RAKHO
+------------------------------------------------------------
+1. Laptop me Notepad kholo.
+2. Key paste karo aur file save karo, naam: meri-api-key.txt
+3. KABHI bhi ye key GitHub me mat dalo, kisi file me
+   likh kar upload mat karo. Sirf Notepad me rakho.
+
+------------------------------------------------------------
+STEP 6: VERCEL ME KEY DALO
+------------------------------------------------------------
+1. vercel.com kholo aur login karo.
+2. Apna SastaBazaar project par CLICK karo.
+3. Upar "Settings" tab par CLICK karo.
+4. Baayein side me "Environment Variables" par CLICK karo.
+5. Pehli variable:
+   - Name: AI_PROVIDER
+   - Value: gemini
+   - "Add" dabao.
+6. Doosri variable:
+   - Name: AI_API_KEY
+   - Value: (Notepad se key copy karke paste karo)
+   - "Add" dabao.
+7. Upar "Deployments" tab par CLICK karo.
+8. Sabse upar wale deployment ke daayein "..." (teen dots)
+   par CLICK karo → "Redeploy" par CLICK karo → "Redeploy"
+   dobara dabao.
+9. ~2 minute ruko. Ab chatbot me AI jud jayegi.
+
+------------------------------------------------------------
+STEP 7: SUPABASE — KUCH NAHI KARNA
+------------------------------------------------------------
+**Supabase me koi SQL nahi chalana. Koi table nahi banana.
+Koi migration nahi chalani.** v2 me Supabase me kuch nahi
+dalna hai. Ye step sirf isliye likha hai taaki galti se
+bhi kuch na chalao.
+
+------------------------------------------------------------
+STEP 8: TEST KARO
+------------------------------------------------------------
+1. Apni website kholo (sastabazaar.in).
+2. Neeche daayein taraf 💬 (chat) icon par CLICK karo.
+3. Hindi me likho: "refund kaise milega"
+   → jawab aana chahiye.
+4. Mic (🎤) dabao aur bolo: "gujarati kapde dikhao"
+   → "kholkar dekho" button aana chahiye.
+5. Photo (📷) dabao, apni photo chuno
+   → style salah aani chahiye.
+6. Ruler (📏) dabao → apna size daalo → Save dabao.
+7. Upar "AI jud gaya hai" likha dikhe to AI ON hai.
+   "Basic mode" likha dikhe to Step 6 dobara check karo.
+
+------------------------------------------------------------
+OPTIONAL: VS CODE (zaroori NAHI)
+------------------------------------------------------------
+Sirf agar code dekhna ho to: VS Code kholo → "Open Folder"
+→ SastaBazaar wala folder kholo. Setup ke liye zaroori
+nahi hai — upar ke steps hi kaafi hain.
+
+------------------------------------------------------------
+DIKKAT AAYE TO
+------------------------------------------------------------
+- "AI jud nahi raha": Step 6 me key sahi paste hui? Redeploy kiya?
+- "File upload nahi ho rahi": sahi folder khola? (Step 3.7)
+- Baaki kuch bhi: email karo → s.ghatora1979@gmail.com
+============================================================
