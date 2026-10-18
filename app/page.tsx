@@ -1,4 +1,5 @@
 import { Hero } from '@/components/home/Hero';
+import { AdBar } from '@/components/ads/AdBar';
 import { MatrixIntro } from '@/components/home/MatrixIntro';
 import { LocalBazaarButton } from '@/components/home/LocalBazaarButton';
 import { ShopkeeperCta } from '@/components/home/ShopkeeperCta';
@@ -19,6 +20,7 @@ export default function HomePage() {
   return (
     <>
       <MatrixIntro />
+      <AdBar />
       <LocalBazaarButton />
       <ShopkeeperCta />
       <Hero />
